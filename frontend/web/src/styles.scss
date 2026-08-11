@@ -1,0 +1,68 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$myshop-primary: mat.m2-define-palette(mat.$m2-indigo-palette, 600);
+$myshop-accent: mat.m2-define-palette(mat.$m2-pink-palette, A200);
+$myshop-warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+$myshop-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $myshop-primary,
+    accent: $myshop-accent,
+    warn: $myshop-warn,
+  ),
+  typography: mat.m2-define-typography-config(
+    $font-family: 'Inter, system-ui, -apple-system, sans-serif',
+  ),
+  density: 0,
+));
+
+@include mat.all-component-themes($myshop-theme);
+
+:root {
+  --primary: #4f46e5;
+  --accent: #ec4899;
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-alt: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --seller-primary: #059669;
+  --manager-primary: #7c3aed;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); }
+
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: #1e293b;
+}
+
+@media (max-width: 480px) {
+  .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
