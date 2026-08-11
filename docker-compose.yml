@@ -1,0 +1,154 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-myshop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_strong_password}
+      POSTGRES_DB: ${POSTGRES_DB:-myshop}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myshop}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-myshop_meili_master_key}
+      MEILI_ENV: development
+    volumes:
+      - meili_data:/meili_data
+    ports:
+      - "7700:7700"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  auth-service:
+    build: ./backend/services/auth-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      DEMO_MANAGER_EMAIL: ${DEMO_MANAGER_EMAIL:-manager@myshop.app}
+      DEMO_MANAGER_PASSWORD: ${DEMO_MANAGER_PASSWORD:-Manager2026!}
+      PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  store-service:
+    build: ./backend/services/store-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      PORT: 3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3002:3002"
+
+  catalog-service:
+    build: ./backend/services/catalog-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-myshop_meili_master_key}
+      PORT: 3003
+    depends_on:
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    ports:
+      - "3003:3003"
+
+  order-service:
+    build: ./backend/services/order-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      PORT: 3004
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3004:3004"
+
+  seller-service:
+    build: ./backend/services/seller-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      AUTH_SERVICE_URL: http://auth-service:3001
+      STORE_SERVICE_URL: http://store-service:3002
+      DEMO_STORE_ID: ${DEMO_STORE_ID:-}
+      PORT: 3005
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      store-service:
+        condition: service_started
+    ports:
+      - "3005:3005"
+
+  user-service:
+    build: ./backend/services/user-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      PORT: 3006
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3006:3006"
+
+  analytics-service:
+    build: ./backend/services/analytics-service
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myshop}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-myshop}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_64chars_minimum_required}
+      ORDER_SERVICE_URL: http://order-service:3004
+      STORE_SERVICE_URL: http://store-service:3002
+      PORT: 3007
+    depends_on:
+      postgres:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+    ports:
+      - "3007:3007"
+
+  gateway:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./infra/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - store-service
+      - catalog-service
+      - order-service
+      - seller-service
+      - user-service
+      - analytics-service
+
+volumes:
+  postgres_data:
+  meili_data:

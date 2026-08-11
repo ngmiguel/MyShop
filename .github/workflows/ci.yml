@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - auth-service
+          - store-service
+          - catalog-service
+          - order-service
+          - seller-service
+          - user-service
+          - analytics-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build ${{ matrix.service }}
+        working-directory: backend/services/${{ matrix.service }}
+        run: |
+          npm install
+          npm run build
+
+  frontend-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build Angular
+        working-directory: frontend/web
+        run: |
+          npm ci
+          npm run build
+
+  frontend-mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Analyze Flutter
+        working-directory: frontend/mobile
+        run: |
+          flutter pub get
+          flutter analyze
