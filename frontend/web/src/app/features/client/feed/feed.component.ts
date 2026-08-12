@@ -5,12 +5,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatChipsModule } from '@angular/material/chips';
-import { CatalogService } from '../../core/services/catalog.service';
-import { UserService } from '../../core/services/user.service';
-import { ProductCardComponent } from '../../shared/components/product-card/product-card.component';
-import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
-import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { Product, Category } from '../../core/models';
+import { CatalogService } from '../../../core/services/catalog.service';
+import { UserService } from '../../../core/services/user.service';
+import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
+import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import { Product, Category } from '../../../core/models';
 
 @Component({
   selector: 'app-feed',
