@@ -10,6 +10,7 @@
     "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:unit": "ng test --watch=false --browsers=ChromeHeadless --code-coverage=false",
     "lint": "ng lint"
   },
   "private": true,

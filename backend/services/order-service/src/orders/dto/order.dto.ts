@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString, IsUUID, IsOptional, IsEnum, IsInt, Min, Max, IsEmail,
 } from 'class-validator';
-import { FulfillmentMode, OrderStatus } from '../entities/order.entity';
+import { FulfillmentMode, OrderStatus } from '../../entities/order.entity';
 
 export class CheckoutDto {
   @ApiPropertyOptional()
