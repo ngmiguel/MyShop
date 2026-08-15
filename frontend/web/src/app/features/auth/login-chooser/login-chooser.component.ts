@@ -1,89 +1,110 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
+import { DemoRoleLoginComponent } from '../../../shared/components/auth/demo-role-login.component';
+import { ThemeQuickToggleComponent } from '../../../shared/components/theme-quick-toggle/theme-quick-toggle.component';
+
+const ROLES = [
+  {
+    to: '/client/account',
+    icon: 'shopping_bag',
+    title: 'Client',
+    description: 'Parcourez librement le catalogue sans compte. Créez-en un pour conserver panier, commandes, tickets et préférences.',
+    action: 'Gérer mon compte client',
+    tone: 'emerald',
+  },
+  {
+    to: '/auth/seller',
+    icon: 'qr_code_scanner',
+    title: 'Vendeur',
+    description: 'Rattaché à une boutique par un mot de passe fourni par le manager. Scannez les codes QR des clients et confirmez les retraits.',
+    action: 'Accéder à l\'espace vendeur',
+    tone: 'amber',
+  },
+  {
+    to: '/auth/manager',
+    icon: 'dashboard',
+    title: 'Manager',
+    description: 'Créez et pilotez vos boutiques, suivez le décisionnel, les modèles prédictifs et le monitoring de l\'application.',
+    action: 'Accéder à la console manager',
+    tone: 'indigo',
+  },
+];
 
 @Component({
   selector: 'app-login-chooser',
   standalone: true,
-  imports: [RouterLink, MatIconModule, MatButtonModule],
+  imports: [RouterLink, MatIconModule, DemoRoleLoginComponent, ThemeQuickToggleComponent],
   template: `
-    <div class="auth-page">
-      <div class="auth-header">
-        <mat-icon class="logo">storefront</mat-icon>
-        <h1>MyShop</h1>
-        <p>Choisissez votre espace de connexion</p>
-      </div>
-
-      <div class="role-cards">
-        <a routerLink="/client/feed" class="role-card client">
-          <mat-icon>shopping_bag</mat-icon>
-          <div>
-            <strong>Client</strong>
-            <span>Parcourir et acheter</span>
-          </div>
-          <mat-icon class="arrow">chevron_right</mat-icon>
+    <div class="page">
+      <header class="top-header">
+        <a routerLink="/client/feed" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+          Retour au catalogue
         </a>
+        <app-theme-quick-toggle />
+      </header>
 
-        <a routerLink="/auth/seller" class="role-card seller">
-          <mat-icon>badge</mat-icon>
-          <div>
-            <strong>Vendeur</strong>
-            <span>Scanner et valider les commandes</span>
-          </div>
-          <mat-icon class="arrow">chevron_right</mat-icon>
-        </a>
+      <main class="main">
+        <h1>Comment souhaitez-vous vous connecter ?</h1>
+        <p class="intro">
+          Boutika réunit trois espaces autour d'un même flux : le client génère un code QR de retrait,
+          le vendeur le scanne en boutique, le manager mesure et pilote l'ensemble.
+        </p>
 
-        <a routerLink="/auth/manager" class="role-card manager">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <div>
-            <strong>Manager</strong>
-            <span>Administrer la marketplace</span>
-          </div>
-          <mat-icon class="arrow">chevron_right</mat-icon>
-        </a>
-      </div>
+        <div class="role-grid">
+          @for (role of roles; track role.to) {
+            <a [routerLink]="role.to" class="role-card" [class]="role.tone">
+              <mat-icon>{{ role.icon }}</mat-icon>
+              <h2>{{ role.title }}</h2>
+              <p>{{ role.description }}</p>
+              <span class="action">
+                {{ role.action }}
+                <mat-icon>arrow_forward</mat-icon>
+              </span>
+            </a>
+          }
+        </div>
+
+        <app-demo-role-login currentRole="all" />
+      </main>
     </div>
   `,
   styles: [`
-    .auth-page {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 32px 24px;
-      max-width: 420px;
-      margin: 0 auto;
+    .page { min-height: 100dvh; display: flex; flex-direction: column; background: rgb(var(--canvas)); }
+    .top-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgb(var(--line)); background: rgb(var(--surface)); padding: 12px 16px;
     }
-    .auth-header { text-align: center; margin-bottom: 40px; }
-    .logo { font-size: 56px; width: 56px; height: 56px; color: var(--primary); }
-    h1 { margin: 12px 0 4px; font-size: 1.75rem; }
-    p { margin: 0; color: var(--text-muted); font-size: 0.9375rem; }
-    .role-cards { display: flex; flex-direction: column; gap: 12px; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500;
+      color: rgb(var(--muted)); text-decoration: none; padding: 6px 10px; border-radius: 8px;
+    }
+    .back-btn:hover { background: rgb(var(--surface-2)); color: rgb(var(--ink)); }
+    .main { max-width: 80rem; margin: 0 auto; flex: 1; padding: 40px 16px; width: 100%; }
+    h1 { margin: 0; font-size: 1.875rem; font-weight: 600; color: rgb(var(--ink)); }
+    .intro { margin: 8px 0 0; max-width: 42rem; font-size: 14px; color: rgb(var(--muted)); line-height: 1.6; }
+    .role-grid { display: grid; gap: 16px; margin-top: 32px; }
+    @media (min-width: 768px) { .role-grid { grid-template-columns: repeat(3, 1fr); } }
     .role-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 18px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      text-decoration: none;
-      color: inherit;
-      transition: box-shadow 0.2s, border-color 0.2s;
+      display: flex; flex-direction: column; padding: 20px; border-radius: 12px;
+      border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); text-decoration: none; color: inherit;
+      transition: border-color 0.15s;
     }
-    .role-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
-    .role-card.client:hover { border-color: var(--primary); }
-    .role-card.seller:hover { border-color: #059669; }
-    .role-card.manager:hover { border-color: #7c3aed; }
-    .role-card mat-icon:first-child { font-size: 28px; width: 28px; height: 28px; }
-    .role-card.client mat-icon:first-child { color: var(--primary); }
-    .role-card.seller mat-icon:first-child { color: #059669; }
-    .role-card.manager mat-icon:first-child { color: #7c3aed; }
-    .role-card div { flex: 1; }
-    .role-card strong { display: block; font-size: 1rem; }
-    .role-card span { font-size: 0.8125rem; color: var(--text-muted); }
-    .arrow { color: var(--text-muted); }
+    .role-card:hover { border-color: rgb(var(--accent)); }
+    .role-card > mat-icon { font-size: 28px; width: 28px; height: 28px; }
+    .role-card.emerald > mat-icon { color: rgb(5 150 105); }
+    .role-card.amber > mat-icon { color: rgb(217 119 6); }
+    .role-card.indigo > mat-icon { color: rgb(67 56 202); }
+    h2 { margin: 16px 0 0; font-size: 1.125rem; font-weight: 600; }
+    .role-card p { flex: 1; margin: 8px 0 0; font-size: 14px; color: rgb(var(--muted)); line-height: 1.5; }
+    .action {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 16px;
+      font-size: 14px; font-weight: 500; color: rgb(var(--accent));
+    }
+    .action mat-icon { font-size: 16px; width: 16px; height: 16px; }
   `],
 })
-export class LoginChooserComponent {}
+export class LoginChooserComponent {
+  readonly roles = ROLES;
+}

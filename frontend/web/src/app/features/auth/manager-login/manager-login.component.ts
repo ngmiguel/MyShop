@@ -1,84 +1,85 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/services/auth.service';
+import { AuthPageShellComponent } from '../../../shared/components/auth/auth-page-shell.component';
+import { DemoRoleLoginComponent } from '../../../shared/components/auth/demo-role-login.component';
+import { MANAGER_DEMO } from '../../../core/data/demo-accounts';
 
 @Component({
   selector: 'app-manager-login',
   standalone: true,
-  imports: [
-    FormsModule, RouterLink, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatIconModule, MatSnackBarModule,
-  ],
+  imports: [FormsModule, MatIconModule, MatSnackBarModule, AuthPageShellComponent, DemoRoleLoginComponent],
   template: `
-    <div class="auth-page">
-      <a routerLink="/auth/login" class="back"><mat-icon>arrow_back</mat-icon></a>
+    <app-auth-page-shell backLabel="Choix du rôle" backLink="/auth/login">
+      <h1>Console manager</h1>
+      <p class="subtitle">Accédez à la création de boutiques, au décisionnel et au monitoring de l'enseigne.</p>
 
-      <div class="auth-header">
-        <mat-icon class="logo manager">admin_panel_settings</mat-icon>
-        <h1>Espace manager</h1>
-        <p>Administration de la marketplace</p>
-      </div>
+      <form class="auth-form card" (ngSubmit)="login()">
+        <label for="m-email">E-mail professionnel <span class="req">*</span></label>
+        <input id="m-email" type="email" [(ngModel)]="email" name="email" required />
 
-      <form class="auth-form" (ngSubmit)="login()">
-        <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
-          <input matInput type="email" [(ngModel)]="email" name="email" required />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Mot de passe</mat-label>
-          <input matInput type="password" [(ngModel)]="password" name="password" required />
-        </mat-form-field>
-        <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="loading()">
-          Se connecter
+        <label for="m-pass">Mot de passe <span class="req">*</span></label>
+        <input id="m-pass" type="password" [(ngModel)]="password" name="password" required placeholder="••••••" />
+        <p class="hint">Démonstration : Manager2026!</p>
+
+        <button type="submit" class="btn-primary indigo" [disabled]="loading()">
+          <mat-icon>dashboard</mat-icon> Ouvrir la console
         </button>
       </form>
-    </div>
+
+      <app-demo-role-login currentRole="manager" />
+    </app-auth-page-shell>
   `,
   styles: [`
-    .auth-page {
-      min-height: 100dvh;
-      padding: 24px;
-      max-width: 420px;
-      margin: 0 auto;
+    h1 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+    .subtitle { margin: 4px 0 24px; font-size: 14px; color: rgb(var(--muted)); }
+    .card {
+      padding: 20px; border-radius: 12px; border: 1px solid rgb(var(--line)); background: rgb(var(--surface));
+      display: flex; flex-direction: column; gap: 8px;
     }
-    .back { display: inline-flex; color: var(--text-muted); margin-bottom: 16px; }
-    .auth-header { text-align: center; margin-bottom: 32px; }
-    .logo { font-size: 48px; width: 48px; height: 48px; }
-    .logo.manager { color: #7c3aed; }
-    h1 { margin: 12px 0 4px; font-size: 1.5rem; }
-    p { margin: 0; color: var(--text-muted); }
-    .auth-form { display: flex; flex-direction: column; gap: 4px; }
-    .auth-form mat-form-field { width: 100%; }
-    .submit-btn { height: 48px; margin-top: 8px; background: #7c3aed !important; }
+    label { font-size: 13px; font-weight: 600; margin-top: 8px; }
+    .req { color: #dc2626; }
+    input {
+      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgb(var(--line));
+      background: rgb(var(--surface)); font-size: 14px;
+    }
+    input:focus { outline: none; border-color: rgb(var(--accent)); box-shadow: 0 0 0 3px rgba(var(--accent),0.15); }
+    .hint { margin: 0; font-size: 12px; color: rgb(var(--muted)); }
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 12px; padding: 12px; border: none; border-radius: 999px; font-weight: 600; cursor: pointer; color: white;
+    }
+    .btn-primary.indigo { background: rgb(67 56 202); }
+    .btn-primary:disabled { opacity: 0.5; }
   `],
 })
 export class ManagerLoginComponent {
   private readonly auth = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
 
-  email = '';
-  password = '';
+  email = MANAGER_DEMO.email!;
+  password = MANAGER_DEMO.password!;
   loading = signal(false);
 
   login(): void {
+    if (!this.email.includes('@') || this.password.length < 4) {
+      this.snackBar.open('Identifiants incomplets', 'OK', { duration: 2500 });
+      return;
+    }
     this.loading.set(true);
     this.auth.login(this.email, this.password).subscribe({
       next: (res) => {
         if (res.user.role === 'manager') {
           this.auth.redirectByRole('manager');
         } else {
-          this.snackBar.open('Acces reserve aux managers', 'Fermer', { duration: 3000 });
+          this.snackBar.open('Accès réservé aux managers', 'OK', { duration: 3000 });
           this.auth.logout();
         }
       },
       error: () => {
-        this.snackBar.open('Identifiants incorrects', 'Fermer', { duration: 3000 });
+        this.snackBar.open('Identifiants incorrects', 'OK', { duration: 3000 });
         this.loading.set(false);
       },
     });

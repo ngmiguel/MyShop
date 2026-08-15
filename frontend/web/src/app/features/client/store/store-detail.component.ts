@@ -1,42 +1,56 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { CatalogImageService } from '../../../core/services/catalog-image.service';
 import { StoreService } from '../../../core/services/store.service';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { Product, Store } from '../../../core/models';
 import { MatIconModule } from '@angular/material/icon';
+import { STORE_INTERIOR_IMAGE } from '../../../core/data/images';
 
 @Component({
   selector: 'app-store-detail',
   standalone: true,
-  imports: [MatIconModule, PageHeaderComponent, ProductCardComponent, LoadingSpinnerComponent],
+  imports: [MatIconModule, ProductCardComponent, LoadingSpinnerComponent],
   template: `
     @if (loading()) {
       <app-loading-spinner />
     } @else if (store()) {
-      <app-page-header [title]="store()!.name" [showBack]="true" backLink="/client/feed" />
+      @let s = store()!;
+      <div class="page">
+        <button type="button" class="back" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon> Retour
+        </button>
 
-      <div class="store-detail">
-        <div class="store-banner">
-          @if (store()!.coverUrl) {
-            <img [src]="store()!.coverUrl" [alt]="store()!.name" />
-          }
-          <div class="store-meta">
-            @if (store()!.city) {
-              <span><mat-icon>location_on</mat-icon> {{ store()!.city }}</span>
+        <div class="hero-banner">
+          <img [src]="s.coverUrl" [alt]="s.name" />
+          <div class="hero-overlay">
+            @if (s.logoUrl) {
+              <img class="logo" [src]="s.logoUrl" alt="" />
             }
-            @if (store()!.description) {
-              <p>{{ store()!.description }}</p>
-            }
+            <div>
+              <h1>{{ s.name }}</h1>
+              @if (s.city) {
+                <p><mat-icon>location_on</mat-icon> {{ s.city }}</p>
+              }
+            </div>
           </div>
         </div>
 
-        <h2 class="section-title">Produits</h2>
-        <div class="product-grid">
+        <div class="interior">
+          <img [src]="interiorImage" alt="Intérieur boutique" />
+        </div>
+
+        @if (s.description) {
+          <p class="desc">{{ s.description }}</p>
+        }
+
+        <h2 class="section-title">Produits de la boutique</h2>
+        <div class="masonry">
           @for (product of products(); track product.id) {
-            <app-product-card [product]="product" [showFavorite]="false" />
+            <app-product-card [product]="product" />
           } @empty {
             <p class="empty">Aucun produit dans cette boutique.</p>
           }
@@ -45,25 +59,33 @@ import { MatIconModule } from '@angular/material/icon';
     }
   `,
   styles: [`
-    .store-banner { background: var(--surface); margin-bottom: 16px; }
-    .store-banner img { width: 100%; height: 160px; object-fit: cover; }
-    .store-meta { padding: 12px 16px; }
-    .store-meta span { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: var(--text-muted); }
-    .store-meta p { margin: 8px 0 0; font-size: 0.875rem; color: var(--text-muted); }
-    .section-title { padding: 0 16px; font-size: 1rem; margin-bottom: 12px; }
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      padding: 0 16px 24px;
+    .page { padding-bottom: 32px; }
+    .back { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; color: rgb(var(--muted)); cursor: pointer; margin-bottom: 16px; }
+    .hero-banner { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid rgb(var(--line)); margin-bottom: 16px; }
+    .hero-banner > img { width: 100%; height: 200px; object-fit: cover; display: block; }
+    @media (min-width: 640px) { .hero-banner > img { height: 280px; } }
+    .hero-overlay {
+      position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 16px;
+      padding: 20px; background: linear-gradient(to top, rgba(15,23,42,0.75), transparent);
     }
-    .empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 24px; }
+    .logo { width: 56px; height: 56px; border-radius: 12px; border: 2px solid white; object-fit: cover; }
+    .hero-overlay h1 { margin: 0; color: white; font-size: 1.5rem; font-weight: 600; }
+    .hero-overlay p { margin: 4px 0 0; display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.85); font-size: 14px; }
+    .interior { border-radius: 12px; overflow: hidden; margin-bottom: 16px; border: 1px solid rgb(var(--line)); }
+    .interior img { width: 100%; height: 160px; object-fit: cover; display: block; }
+    .desc { font-size: 14px; color: rgb(var(--muted)); line-height: 1.6; margin-bottom: 24px; }
+    .section-title { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px; }
+    .empty { text-align: center; color: rgb(var(--muted)); padding: 24px; }
   `],
 })
 export class StoreDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
   private readonly storeService = inject(StoreService);
   private readonly catalog = inject(CatalogService);
+  private readonly images = inject(CatalogImageService);
+
+  readonly interiorImage = STORE_INTERIOR_IMAGE;
 
   store = signal<Store | null>(null);
   products = signal<Product[]>([]);
@@ -73,17 +95,21 @@ export class StoreDetailComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.storeService.getStore(id).subscribe({
       next: (s) => {
-        this.store.set(s);
+        this.store.set(this.images.enrichStore(s));
         this.loadProducts(id);
       },
       error: () => this.loading.set(false),
     });
   }
 
+  goBack(): void {
+    this.location.back();
+  }
+
   private loadProducts(storeId: string): void {
     this.catalog.getProducts({ storeId, limit: 40 }).subscribe({
       next: (res) => {
-        this.products.set(res.data ?? []);
+        this.products.set(this.images.enrichProducts(res.data ?? []));
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
