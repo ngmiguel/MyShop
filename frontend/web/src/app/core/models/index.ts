@@ -80,7 +80,8 @@ export interface Cart {
   promoCode?: string;
 }
 
-export type OrderStatus = 'pending' | 'ready' | 'redeemed' | 'cancelled' | 'rated';
+export type OrderStatus = 'pending' | 'ready' | 'redeemed' | 'cancelled' | 'rated' | 'expired';
+export type PaymentMethod = 'mobile_money' | 'card' | 'transfer' | 'cash';
 
 export interface Order {
   id: string;
@@ -93,11 +94,21 @@ export interface Order {
   items: CartItem[];
   subtotal: number;
   discount: number;
+  tax?: number;
   total: number;
+  currency?: string;
   pickupCode: string;
+  reference?: string;
   createdAt: string;
+  expiresAt?: string;
   redeemedAt?: string;
   sellerId?: string;
+  paymentMethod?: PaymentMethod;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  sellerRating?: number;
+  ratingComment?: string;
 }
 
 export interface Seller {
@@ -109,9 +120,14 @@ export interface Seller {
   lastName: string;
   email: string;
   phone?: string;
+  position?: string;
+  shift?: string;
   status: 'pending' | 'active' | 'suspended';
   rating?: number;
   reviewCount?: number;
+  salesCount?: number;
+  revenue?: number;
+  joinedAt?: string;
 }
 
 export interface SellerPerformance {
