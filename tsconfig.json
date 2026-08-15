@@ -1,6 +1,7 @@
 {
-  "files": [],
   "compilerOptions": {
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "files": ["scripts/tsconfig-root.ts"]
 }
