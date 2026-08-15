@@ -1,118 +1,66 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { RoleShellComponent, ShellNavItem } from '../../shared/components/role-shell/role-shell.component';
+import { AuthService } from '../../core/services/auth.service';
+import { ManagerDataService } from '../../core/services/manager-data.service';
 
 @Component({
   selector: 'app-manager-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule],
+  imports: [RoleShellComponent],
   template: `
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <mat-icon>storefront</mat-icon>
-          <span>MyShop Manager</span>
-        </div>
-        <nav>
-          <a routerLink="/manager/dashboard" routerLinkActive="active">
-            <mat-icon>dashboard</mat-icon> Tableau de bord
-          </a>
-          <a routerLink="/manager/stores" routerLinkActive="active">
-            <mat-icon>store</mat-icon> Boutiques
-          </a>
-          <a routerLink="/manager/sellers" routerLinkActive="active">
-            <mat-icon>badge</mat-icon> Vendeurs
-          </a>
-          <a routerLink="/manager/analytics" routerLinkActive="active">
-            <mat-icon>analytics</mat-icon> Analytique
-          </a>
-          <a routerLink="/manager/monitoring" routerLinkActive="active">
-            <mat-icon>monitor_heart</mat-icon> Monitoring
-          </a>
-          <a routerLink="/manager/profit" routerLinkActive="active">
-            <mat-icon>account_balance</mat-icon> Profits
-          </a>
-          <a routerLink="/manager/settings" routerLinkActive="active">
-            <mat-icon>settings</mat-icon> Reglages
-          </a>
-        </nav>
-      </aside>
-      <main class="content">
-        <router-outlet />
-      </main>
-      <nav class="mobile-nav">
-        <a routerLink="/manager/dashboard" routerLinkActive="active"><mat-icon>dashboard</mat-icon></a>
-        <a routerLink="/manager/stores" routerLinkActive="active"><mat-icon>store</mat-icon></a>
-        <a routerLink="/manager/sellers" routerLinkActive="active"><mat-icon>badge</mat-icon></a>
-        <a routerLink="/manager/analytics" routerLinkActive="active"><mat-icon>analytics</mat-icon></a>
-        <a routerLink="/manager/settings" routerLinkActive="active"><mat-icon>settings</mat-icon></a>
-      </nav>
-    </div>
+    <app-role-shell
+      [title]="managerName()"
+      [subtitle]="subtitle()"
+      accentClass="indigo"
+      [items]="nav"
+      [badge]="true"
+    >
+      <div shellBadge class="alert-badge">
+        <span>Alertes ouvertes</span>
+        <strong [class.danger]="alerts() > 0">{{ alerts() }}</strong>
+      </div>
+    </app-role-shell>
   `,
   styles: [`
-    .layout {
-      min-height: 100dvh;
+    .alert-badge {
       display: flex;
-      background: var(--bg);
-    }
-    .sidebar {
-      width: 240px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 20px 12px;
-      display: none;
-    }
-    @media (min-width: 768px) {
-      .sidebar { display: block; }
-      .mobile-nav { display: none !important; }
-      .content { padding-bottom: 0 !important; }
-    }
-    .brand {
-      display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      padding: 0 12px 20px;
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--manager-primary, #7c3aed);
-    }
-    nav a {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-radius: 8px;
-      text-decoration: none;
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      margin-bottom: 2px;
+      background: rgb(var(--surface-2));
+      font-size: 12px;
+      color: rgb(var(--muted));
     }
-    nav a.active, nav a:hover {
-      background: rgba(124, 58, 237, 0.08);
-      color: var(--manager-primary, #7c3aed);
-    }
-    .content {
-      flex: 1;
-      padding-bottom: 64px;
-      max-width: 1200px;
-    }
-    .mobile-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-around;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-      z-index: 100;
-    }
-    .mobile-nav a {
-      color: var(--text-muted);
-      padding: 4px 12px;
-    }
-    .mobile-nav a.active { color: var(--manager-primary, #7c3aed); }
+    .alert-badge strong { font-size: 14px; color: #059669; }
+    .alert-badge strong.danger { color: #dc2626; }
   `],
 })
-export class ManagerLayoutComponent {}
+export class ManagerLayoutComponent implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly data = inject(ManagerDataService);
+
+  managerName = signal('Manager');
+  subtitle = signal('Boutiques · Cameroun');
+  alerts = signal(0);
+
+  nav: ShellNavItem[] = [
+    { to: '/manager/dashboard', label: 'Tableau de bord', icon: 'dashboard', exact: true },
+    { to: '/manager/stores', label: 'Boutiques', icon: 'store' },
+    { to: '/manager/sellers', label: 'Vendeurs', icon: 'group' },
+    { to: '/manager/analytics', label: 'Analyses', icon: 'pie_chart' },
+    { to: '/manager/models', label: 'Modèles', icon: 'psychology' },
+    { to: '/manager/monitoring', label: 'Monitoring', icon: 'monitor_heart' },
+    { to: '/manager/profit', label: 'Profit', icon: 'account_balance_wallet' },
+    { to: '/manager/settings', label: 'Paramètres', icon: 'settings' },
+  ];
+
+  ngOnInit(): void {
+    const user = this.auth.user();
+    if (user) {
+      this.managerName.set(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email);
+    }
+    this.subtitle.set(`${this.data.getManagerStores().length} boutiques · Cameroun`);
+    this.alerts.set(this.data.openAlertsCount());
+  }
+}
