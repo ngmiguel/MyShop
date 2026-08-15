@@ -7,7 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [MatIconModule],
   template: `
     <div class="empty-state">
-      <mat-icon>{{ icon }}</mat-icon>
+      <div class="icon-wrap">
+        <mat-icon>{{ icon }}</mat-icon>
+      </div>
       <h3>{{ title }}</h3>
       <p>{{ message }}</p>
       <ng-content></ng-content>
@@ -21,21 +23,29 @@ import { MatIconModule } from '@angular/material/icon';
       justify-content: center;
       padding: 48px 24px;
       text-align: center;
-      color: var(--text-muted);
+      border: 1px dashed rgb(var(--line));
+      border-radius: 12px;
+      background: rgb(var(--surface));
     }
-    mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
+    .icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      background: rgb(var(--surface-2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-bottom: 16px;
-      opacity: 0.5;
+      color: rgb(var(--muted));
     }
+    .icon-wrap mat-icon { font-size: 24px; width: 24px; height: 24px; }
     h3 {
       margin: 0 0 8px;
       font-size: 1.125rem;
-      color: var(--text);
+      font-weight: 600;
+      color: rgb(var(--ink));
     }
-    p { margin: 0; font-size: 0.875rem; max-width: 280px; }
+    p { margin: 0; font-size: 0.875rem; max-width: 360px; color: rgb(var(--muted)); }
   `],
 })
 export class EmptyStateComponent {
