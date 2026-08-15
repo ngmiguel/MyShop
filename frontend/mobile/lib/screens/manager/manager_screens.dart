@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -8,6 +9,7 @@ import '../../data/services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/orders_provider.dart';
+import '../../widgets/app_layout.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/store_card.dart';
 
@@ -40,67 +42,75 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     final lowStock = catalog.products.where((p) => p.stock <= 5).length;
 
     return Scaffold(
+      backgroundColor: AppTheme.contentBackground(context),
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            expandedHeight: 160,
-            pinned: true,
-            backgroundColor: AppTheme.ink900,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: AppTheme.ink900,
-                padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'BUSINESS INTELLIGENCE',
-                      style: TextStyle(color: AppTheme.accent400, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      auth.user?.displayName ?? 'Pilotage',
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
-                    ),
-                    Text(
-                      '${catalog.stores.length} boutiques - panier moyen ${formatPrix(redeemed.isEmpty ? 0 : ca / redeemed.length)}',
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
+          SliverToBoxAdapter(
+            child: HeroHeader(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'BUSINESS INTELLIGENCE',
+                    style: TextStyle(color: AppTheme.accent300, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
+                  ),
+                  Text(
+                    auth.user?.displayName ?? 'Pilotage',
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    '${catalog.stores.length} boutiques - panier moyen ${formatPrix(redeemed.isEmpty ? 0 : ca / redeemed.length)}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.4,
+          SliverToBoxAdapter(
+            child: ContentSheet(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.4,
+                      children: [
+                        _KpiCard(icon: Icons.payments_outlined, label: 'CA confirme', value: formatPrix(ca)),
+                        _KpiCard(icon: Icons.shopping_cart_outlined, label: 'Commandes', value: '${orders.orders.length}'),
+                        _KpiCard(icon: Icons.pending_actions_outlined, label: 'En attente', value: '$pending'),
+                        _KpiCard(icon: Icons.warning_amber_outlined, label: 'Stock critique', value: '$lowStock'),
+                      ],
+                    ),
+                  ),
+                  const SectionHeader(title: 'Top boutiques'),
+                  ...catalog.stores.take(5).map((store) {
+                    final storeOrders = orders.orders.where((o) => o.storeId == store.id && o.status == 'redeemed');
+                    final storeCa = storeOrders.fold<double>(0, (s, o) => s + o.total);
+                    return ListTile(
+                      leading: const Icon(Icons.store_outlined),
+                      title: Text(store.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      trailing: Text(formatPrix(storeCa), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    );
+                  }),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () => context.push('/manager/monitoring'),
+                    icon: const Icon(Icons.monitor_heart_outlined),
+                    label: const Text('Monitoring systeme'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/manager/boutiques/nouvelle'),
+                    icon: const Icon(Icons.add_business_outlined),
+                    label: const Text('Creer une boutique'),
+                  ),
+                ],
               ),
-              delegate: SliverChildListDelegate([
-                _KpiCard(icon: Icons.payments_outlined, label: 'CA confirme', value: formatPrix(ca)),
-                _KpiCard(icon: Icons.shopping_cart_outlined, label: 'Commandes', value: '${orders.orders.length}'),
-                _KpiCard(icon: Icons.pending_actions_outlined, label: 'En attente', value: '$pending'),
-                _KpiCard(icon: Icons.warning_amber_outlined, label: 'Stock critique', value: '$lowStock'),
-              ]),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SectionHeader(title: 'Top boutiques')),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final store = catalog.stores[index];
-                final storeOrders = orders.orders.where((o) => o.storeId == store.id && o.status == 'redeemed');
-                final storeCa = storeOrders.fold<double>(0, (s, o) => s + o.total);
-                return ListTile(
-                  leading: const Icon(Icons.store_outlined),
-                  title: Text(store.name),
-                  trailing: Text(formatPrix(storeCa)),
-                );
-              },
-              childCount: catalog.stores.length.clamp(0, 5),
             ),
           ),
         ],
@@ -118,7 +128,8 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
+      decoration: AppTheme.cardDecoration(context),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -173,10 +184,16 @@ class _ManagerStoresScreenState extends State<ManagerStoresScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: catalog.stores.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) => StoreCard(store: catalog.stores[index]),
+                  itemBuilder: (context, index) {
+                    final store = catalog.stores[index];
+                    return InkWell(
+                      onTap: () => context.push('/manager/boutiques/${store.id}'),
+                      child: StoreCard(store: store),
+                    );
+                  },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => context.push('/manager/boutiques/nouvelle'),
         child: const Icon(Icons.add),
       ),
     );

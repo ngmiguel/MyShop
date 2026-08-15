@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/preferences.dart';
 import '../../providers/preferences_provider.dart';
+import '../../widgets/app_layout.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -34,6 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String _preferredMode = 'peu-importe';
   bool _promosOnly = false;
   bool _localOnly = true;
+  String _themeMode = 'systeme';
 
   bool get _canContinue => _step != 2 || _domains.length >= 3;
 
@@ -56,6 +58,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       preferredMode: _preferredMode,
       promosOnly: _promosOnly,
       localOnly: _localOnly,
+      themeMode: _themeMode,
     );
     await context.read<PreferencesProvider>().completeOnboarding(prefs);
     if (mounted) context.go('/client');
@@ -411,6 +414,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onChanged: (v) => setState(() => _localOnly = v),
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Theme de l\'application', style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                ThemeSelector(
+                  value: _themeMode,
+                  onChanged: (v) => setState(() => _themeMode = v),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 16),

@@ -21,4 +21,6 @@ class ApiConfig {
   static const catalogPath = '/catalog';
   static const ordersPath = '/orders';
   static const sellersPath = '/sellers';
+  static const usersPath = '/users';
+  static const analyticsPath = '/analytics';
 }

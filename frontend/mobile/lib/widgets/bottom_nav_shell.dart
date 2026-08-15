@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/theme/app_theme.dart';
 import '../providers/cart_provider.dart';
 import '../providers/orders_provider.dart';
 
@@ -81,38 +82,94 @@ class BottomNavShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex(),
-        onDestinationSelected: (index) {
-          final target = items[index].path;
-          if (target != currentPath) {
-            context.go(target);
-          }
-        },
-        destinations: items
-            .map(
-              (item) => NavigationDestination(
-                icon: Badge(
-                  isLabelVisible: (item.badge ?? 0) > 0,
-                  label: Text('${item.badge ?? 0}'),
-                  child: Icon(item.icon),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF161B22).withValues(alpha: 0.95)
+              : Colors.white.withValues(alpha: 0.95),
+          border: Border(top: BorderSide(color: isDark ? AppTheme.ink700 : AppTheme.ink100)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final active = _isActive(item.path);
+              return Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (item.path != currentPath) context.go(item.path);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              item.icon,
+                              size: 20,
+                              color: active
+                                  ? (isDark ? Colors.white : AppTheme.ink900)
+                                  : AppTheme.ink300,
+                            ),
+                            if ((item.badge ?? 0) > 0)
+                              Positioned(
+                                right: -8,
+                                top: -6,
+                                child: Container(
+                                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accent500,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    (item.badge! > 9) ? '9+' : '${item.badge}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: active
+                                ? (isDark ? Colors.white : AppTheme.ink900)
+                                : AppTheme.ink300,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                label: item.label,
-              ),
-            )
-            .toList(),
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
 
-  int _selectedIndex() {
-    var index = items.indexWhere((item) => currentPath == item.path);
-    if (index >= 0) return index;
-    index = items.indexWhere(
-      (item) => currentPath.startsWith(item.path) && item.path != '/',
-    );
-    return index >= 0 ? index : 0;
+  bool _isActive(String path) {
+    if (currentPath == path) return true;
+    if (path != '/client' && path != '/vendeur' && path != '/manager') {
+      return currentPath.startsWith(path);
+    }
+    return false;
   }
 }

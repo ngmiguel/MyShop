@@ -8,6 +8,7 @@ class StorageService {
   static const _sessionIdKey = 'session_id';
   static const _userKey = 'user';
   static const _preferencesKey = 'preferences';
+  static const _favoritesKey = 'favorites_local';
 
   Future<SharedPreferences> get _prefs async =>
       SharedPreferences.getInstance();
@@ -66,5 +67,13 @@ class StorageService {
 
   Future<void> clearAll() async {
     await (await _prefs).clear();
+  }
+
+  Future<List<String>> getLocalFavorites() async {
+    return (await _prefs).getStringList(_favoritesKey) ?? [];
+  }
+
+  Future<void> saveLocalFavorites(List<String> ids) async {
+    await (await _prefs).setStringList(_favoritesKey, ids);
   }
 }

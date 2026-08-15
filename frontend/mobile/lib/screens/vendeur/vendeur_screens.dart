@@ -48,6 +48,19 @@ class _VendeurHomeScreenState extends State<VendeurHomeScreen> {
                     'Bonjour ${auth.user?.displayName ?? 'Vendeur'}',
                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
                   ),
+                  const SizedBox(height: 4),
+                  const Row(
+                    children: [
+                      Icon(Icons.waving_hand_outlined, color: AppTheme.accent300, size: 18),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Pret a encaisser vos clients',
+                          style: TextStyle(color: AppTheme.accent300, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     '${orders.pendingCount} commande(s) en attente d\'encaissement',

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -9,9 +8,15 @@ import '../../screens/auth/role_choice_screen.dart';
 import '../../screens/client/cart_screen.dart';
 import '../../screens/client/checkout_screen.dart';
 import '../../screens/client/codes_screen.dart';
+import '../../screens/client/compte_screen.dart';
 import '../../screens/client/explorer_screen.dart';
+import '../../screens/client/favorites_screen.dart';
+import '../../screens/client/preferences_screen.dart';
 import '../../screens/client/product_detail_screen.dart';
+import '../../screens/client/tickets_screen.dart';
+import '../../screens/manager/create_store_screen.dart';
 import '../../screens/manager/manager_screens.dart';
+import '../../screens/manager/monitoring_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/vendeur/vendeur_screens.dart';
 import '../../widgets/bottom_nav_shell.dart';
@@ -37,6 +42,18 @@ class AppRouter {
           if (auth.role == 'manager') return '/manager';
           if (auth.role == 'vendeur') return '/vendeur';
           return '/client';
+        }
+
+        if (loc.startsWith('/vendeur') &&
+            !loc.startsWith('/auth') &&
+            auth.role != 'vendeur') {
+          return '/auth/login?role=vendeur';
+        }
+
+        if (loc.startsWith('/manager') &&
+            !loc.startsWith('/auth') &&
+            auth.role != 'manager') {
+          return '/auth/login?role=manager';
         }
 
         return null;
@@ -75,6 +92,10 @@ class AppRouter {
             GoRoute(path: '/client/parametres', builder: (_, __) => const ClientSettingsScreen()),
           ],
         ),
+        GoRoute(path: '/client/favoris', builder: (_, __) => const FavoritesScreen()),
+        GoRoute(path: '/client/compte', builder: (_, __) => const CompteScreen()),
+        GoRoute(path: '/client/preferences', builder: (_, __) => const PreferencesScreen()),
+        GoRoute(path: '/client/tickets', builder: (_, __) => const TicketsScreen()),
         GoRoute(
           path: '/client/produit/:id',
           builder: (_, state) => ProductDetailScreen(productId: state.pathParameters['id']!),
@@ -83,10 +104,7 @@ class AppRouter {
           path: '/client/boutique/:id',
           builder: (_, state) => StoreDetailScreen(storeId: state.pathParameters['id']!),
         ),
-        GoRoute(
-          path: '/client/checkout',
-          builder: (_, __) => const CheckoutScreen(),
-        ),
+        GoRoute(path: '/client/checkout', builder: (_, __) => const CheckoutScreen()),
         GoRoute(
           path: '/client/codes/:id',
           builder: (_, state) => CodeDetailScreen(orderId: state.pathParameters['id']!),
@@ -122,6 +140,12 @@ class AppRouter {
             GoRoute(path: '/manager/equipe', builder: (_, __) => const ManagerTeamScreen()),
             GoRoute(path: '/manager/parametres', builder: (_, __) => const ManagerSettingsScreen()),
           ],
+        ),
+        GoRoute(path: '/manager/monitoring', builder: (_, __) => const ManagerMonitoringScreen()),
+        GoRoute(path: '/manager/boutiques/nouvelle', builder: (_, __) => const CreateStoreScreen()),
+        GoRoute(
+          path: '/manager/boutiques/:id',
+          builder: (_, state) => ManagerStoreDetailScreen(storeId: state.pathParameters['id']!),
         ),
       ],
     );

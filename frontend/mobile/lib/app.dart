@@ -5,14 +5,17 @@ import 'package:provider/provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/api_client.dart';
+import 'data/services/analytics_service.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/catalog_service.dart';
 import 'data/services/order_service.dart';
 import 'data/services/storage_service.dart';
 import 'data/services/store_service.dart';
+import 'data/services/user_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/catalog_provider.dart';
+import 'providers/favorites_provider.dart';
 import 'providers/orders_provider.dart';
 import 'providers/preferences_provider.dart';
 import 'widgets/common_widgets.dart';
@@ -32,6 +35,9 @@ class _MyShopAppState extends State<MyShopApp> {
   late final StoreService _storeService;
   late final OrderService _orderService;
   late final SellerApiService _sellerApiService;
+  late final UserService _userService;
+  late final AnalyticsService _analyticsService;
+  late final FavoritesProvider _favoritesProvider;
   late final AuthProvider _authProvider;
   late final PreferencesProvider _preferencesProvider;
   late final CatalogProvider _catalogProvider;
@@ -54,6 +60,8 @@ class _MyShopAppState extends State<MyShopApp> {
     _storeService = StoreService(_apiClient);
     _orderService = OrderService(_apiClient);
     _sellerApiService = SellerApiService(_apiClient);
+    _userService = UserService(_apiClient);
+    _analyticsService = AnalyticsService(_apiClient);
 
     _authProvider = AuthProvider(
       storage: _storage,
@@ -64,10 +72,12 @@ class _MyShopAppState extends State<MyShopApp> {
     _catalogProvider = CatalogProvider(_catalogService, _storeService);
     _cartProvider = CartProvider(_orderService, _authProvider);
     _ordersProvider = OrdersProvider(_orderService, _authProvider);
+    _favoritesProvider = FavoritesProvider(_storage, _userService, _authProvider);
 
     await Future.wait([
       _authProvider.init(),
       _preferencesProvider.init(),
+      _favoritesProvider.init(),
     ]);
 
     _router = AppRouter.create();
@@ -90,9 +100,12 @@ class _MyShopAppState extends State<MyShopApp> {
     return MultiProvider(
       providers: [
         Provider.value(value: _storeService),
+        Provider.value(value: _userService),
+        Provider.value(value: _analyticsService),
         Provider.value(value: _sellerApiService),
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider.value(value: _preferencesProvider),
+        ChangeNotifierProvider.value(value: _favoritesProvider),
         ChangeNotifierProvider.value(value: _catalogProvider),
         ChangeNotifierProvider.value(value: _cartProvider),
         ChangeNotifierProvider.value(value: _ordersProvider),
@@ -104,7 +117,11 @@ class _MyShopAppState extends State<MyShopApp> {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
-            themeMode: prefs.preferences.darkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: switch (prefs.preferences.themeMode) {
+              'sombre' => ThemeMode.dark,
+              'clair' => ThemeMode.light,
+              _ => ThemeMode.system,
+            },
             routerConfig: _router,
           );
         },

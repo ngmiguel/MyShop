@@ -12,7 +12,7 @@ class UserPreferences {
     this.preferredMode = 'peu-importe',
     this.promosOnly = false,
     this.localOnly = true,
-    this.darkMode = false,
+    this.themeMode = 'systeme',
   });
 
   final bool onboardingDone;
@@ -25,7 +25,7 @@ class UserPreferences {
   final String preferredMode;
   final bool promosOnly;
   final bool localOnly;
-  final bool darkMode;
+  final String themeMode;
 
   UserPreferences copyWith({
     bool? onboardingDone,
@@ -38,7 +38,7 @@ class UserPreferences {
     String? preferredMode,
     bool? promosOnly,
     bool? localOnly,
-    bool? darkMode,
+    String? themeMode,
   }) {
     return UserPreferences(
       onboardingDone: onboardingDone ?? this.onboardingDone,
@@ -51,23 +51,25 @@ class UserPreferences {
       preferredMode: preferredMode ?? this.preferredMode,
       promosOnly: promosOnly ?? this.promosOnly,
       localOnly: localOnly ?? this.localOnly,
-      darkMode: darkMode ?? this.darkMode,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 
   factory UserPreferences.fromJson(Map<String, dynamic> json) {
+    final legacyDark = json['darkMode'] as bool? ?? false;
     return UserPreferences(
       onboardingDone: json['onboardingDone'] as bool? ?? false,
       intention: json['intention'] as String? ?? 'quotidien',
       domains: (json['domains'] as List?)?.cast<String>() ?? [],
       subcategories: (json['subcategories'] as List?)?.cast<String>() ?? [],
-      budget: json['budget'] as String? ?? 'illimite',
+      budget: _migrateBudget(json['budget'] as String?),
       city: json['city'] as String? ?? 'Abidjan',
       radiusKm: json['radiusKm'] as int? ?? 15,
       preferredMode: json['preferredMode'] as String? ?? 'peu-importe',
       promosOnly: json['promosOnly'] as bool? ?? false,
       localOnly: json['localOnly'] as bool? ?? true,
-      darkMode: json['darkMode'] as bool? ?? false,
+      themeMode: json['themeMode'] as String? ??
+          (legacyDark ? 'sombre' : 'systeme'),
     );
   }
 
@@ -82,8 +84,26 @@ class UserPreferences {
         'preferredMode': preferredMode,
         'promosOnly': promosOnly,
         'localOnly': localOnly,
-        'darkMode': darkMode,
+        'themeMode': themeMode,
       };
+}
+
+String _migrateBudget(String? value) {
+  return switch (value) {
+    'economique' => 'petit',
+    'modere' => 'moyen',
+    'premium' => 'large',
+    _ => value ?? 'illimite',
+  };
+}
+
+int budgetMax(String key) {
+  return switch (key) {
+    'petit' => 10000,
+    'moyen' => 100000,
+    'large' => 1000000,
+    _ => 999999999,
+  };
 }
 
 class DomainCategory {
@@ -100,18 +120,27 @@ class DomainCategory {
   final List<String> subcategories;
 }
 
+DomainCategory? domainById(String id) {
+  try {
+    return domainCategories.firstWhere((d) => d.id == id);
+  } catch (_) {
+    return null;
+  }
+}
+
 const intentions = [
-  ('quotidien', 'Courses du quotidien', Icons.shopping_basket_outlined),
-  ('occasion', 'Achat ponctuel', Icons.card_giftcard_outlined),
-  ('pro', 'Usage professionnel', Icons.work_outline),
-  ('decouverte', 'Decouvrir de nouvelles boutiques', Icons.explore_outlined),
+  ('quotidien', 'Achats du quotidien', Icons.shopping_cart_outlined),
+  ('projet', 'Un projet de construction', Icons.construction_outlined),
+  ('pro', 'Equiper mon activite', Icons.work_outline),
+  ('plaisir', 'Me faire plaisir', Icons.auto_awesome_outlined),
+  ('revente', 'Acheter pour revendre', Icons.repeat_outlined),
 ];
 
 const budgets = [
-  ('economique', 'Economique - moins de 10 000 FCFA'),
-  ('modere', 'Modere - 10 000 a 50 000 FCFA'),
-  ('premium', 'Premium - 50 000 a 200 000 FCFA'),
-  ('illimite', 'Sans limite'),
+  ('petit', 'Moins de 10 000 F'),
+  ('moyen', '10 000 - 100 000 F'),
+  ('large', '100 000 - 1 M F'),
+  ('illimite', 'Aucune limite'),
 ];
 
 const domainCategories = [
@@ -119,54 +148,262 @@ const domainCategories = [
     id: 'agro',
     name: 'Agroalimentaire',
     icon: Icons.grass_outlined,
-    subcategories: ['Fruits', 'Legumes', 'Epicerie'],
-  ),
-  DomainCategory(
-    id: 'technologie',
-    name: 'Technologie',
-    icon: Icons.devices_outlined,
-    subcategories: ['Telephones', 'Accessoires', 'Informatique'],
-  ),
-  DomainCategory(
-    id: 'style',
-    name: 'Style',
-    icon: Icons.checkroom_outlined,
-    subcategories: ['Vetements', 'Chaussures', 'Accessoires mode'],
-  ),
-  DomainCategory(
-    id: 'beaute',
-    name: 'Beaute',
-    icon: Icons.spa_outlined,
-    subcategories: ['Soins', 'Maquillage', 'Cheveux'],
-  ),
-  DomainCategory(
-    id: 'materiaux',
-    name: 'Materiaux',
-    icon: Icons.construction_outlined,
-    subcategories: ['Maconnerie', 'Plomberie', 'Electricite'],
-  ),
-  DomainCategory(
-    id: 'vehicules',
-    name: 'Vehicules',
-    icon: Icons.directions_car_outlined,
-    subcategories: ['Pieces auto', 'Moto', 'Accessoires'],
-  ),
-  DomainCategory(
-    id: 'maison',
-    name: 'Maison',
-    icon: Icons.home_outlined,
-    subcategories: ['Mobilier', 'Decoration', 'Electromenager'],
-  ),
-  DomainCategory(
-    id: 'sport',
-    name: 'Sport',
-    icon: Icons.fitness_center_outlined,
-    subcategories: ['Equipement', 'Textile sport', 'Nutrition'],
+    subcategories: [
+      'Fruits & legumes',
+      'Cereales & tubercules',
+      'Epices & condiments',
+      'Cafe & cacao',
+      'Viandes & poissons',
+      'Produits laitiers',
+      'Boissons',
+      'Huiles & matieres grasses',
+      'Conserves & epicerie',
+      'Boulangerie & patisserie',
+    ],
   ),
   DomainCategory(
     id: 'animaux',
     name: 'Animaux',
     icon: Icons.pets_outlined,
-    subcategories: ['Alimentation', 'Accessoires', 'Soins'],
+    subcategories: [
+      'Betall',
+      'Volaille',
+      'Animaux de compagnie',
+      'Poissons & aquariophilie',
+      'Alimentation animale',
+      'Accessoires & cages',
+      'Produits veterinaires',
+    ],
+  ),
+  DomainCategory(
+    id: 'vehicules',
+    name: 'Vehicules',
+    icon: Icons.directions_car_outlined,
+    subcategories: [
+      'Voitures',
+      'Motos & scooters',
+      'Camions & utilitaires',
+      'Tricycles',
+      'Velos',
+      'Pieces detachees',
+      'Pneus & jantes',
+      'Accessoires auto',
+      'Engins agricoles',
+    ],
+  ),
+  DomainCategory(
+    id: 'materiaux',
+    name: 'Materiaux techniques',
+    icon: Icons.foundation_outlined,
+    subcategories: [
+      'Plomberie',
+      'Maconnerie',
+      'Electricite',
+      'Menuiserie',
+      'Peinture & revetements',
+      'Quincaillerie',
+      'Carrelage & sanitaire',
+      'Toiture & charpente',
+      'Outillage',
+      'Soudure & metallerie',
+    ],
+  ),
+  DomainCategory(
+    id: 'technologie',
+    name: 'Technologie',
+    icon: Icons.laptop_mac_outlined,
+    subcategories: [
+      'Ordinateurs',
+      'Telephones',
+      'Tablettes',
+      'Audio & son',
+      'Photo & video',
+      'Gaming',
+      'Composants & reseaux',
+      'Objets connectes',
+      'Accessoires & cables',
+      'Imprimantes',
+    ],
+  ),
+  DomainCategory(
+    id: 'bijoux',
+    name: 'Bijoux',
+    icon: Icons.diamond_outlined,
+    subcategories: [
+      'Or',
+      'Argent',
+      'Perles & pierres',
+      'Montres',
+      'Bijoux fantaisie',
+      'Alliances',
+      'Bijoux artisanaux',
+    ],
+  ),
+  DomainCategory(
+    id: 'style',
+    name: 'Style & Mode',
+    icon: Icons.checkroom_outlined,
+    subcategories: [
+      'Pret-a-porter femme',
+      'Pret-a-porter homme',
+      'Enfant & bebe',
+      'Chaussures',
+      'Sacs & maroquinerie',
+      'Tissus & wax',
+      'Sur-mesure',
+      'Accessoires de mode',
+      'Friperie',
+    ],
+  ),
+  DomainCategory(
+    id: 'beaute',
+    name: 'Beaute & Soins',
+    icon: Icons.spa_outlined,
+    subcategories: [
+      'Soins du visage',
+      'Soins du corps',
+      'Cheveux & perruques',
+      'Maquillage',
+      'Parfums',
+      'Ongles',
+      'Hygiene',
+      'Cosmetique naturelle',
+    ],
+  ),
+  DomainCategory(
+    id: 'maison',
+    name: 'Maison & Deco',
+    icon: Icons.weekend_outlined,
+    subcategories: [
+      'Mobilier',
+      'Decoration',
+      'Literie & linge',
+      'Cuisine & vaisselle',
+      'Electromenager',
+      'Luminaires',
+      'Rangement',
+      'Jardin & exterieur',
+    ],
+  ),
+  DomainCategory(
+    id: 'sport',
+    name: 'Sport & Loisirs',
+    icon: Icons.sports_soccer_outlined,
+    subcategories: [
+      'Fitness & musculation',
+      'Football',
+      'Cyclisme',
+      'Sports de combat',
+      'Randonnee & camping',
+      'Vetements de sport',
+      'Jeux & puzzles',
+      'Piscine',
+    ],
+  ),
+  DomainCategory(
+    id: 'sante',
+    name: 'Sante & Pharmacie',
+    icon: Icons.medication_outlined,
+    subcategories: [
+      'Parapharmacie',
+      'Materiel medical',
+      'Complements alimentaires',
+      'Optique',
+      'Orthopedie',
+      'Premiers secours',
+      'Hygiene medicale',
+    ],
+  ),
+  DomainCategory(
+    id: 'enfance',
+    name: 'Enfance & Jouets',
+    icon: Icons.toys_outlined,
+    subcategories: [
+      'Jouets',
+      'Puericulture',
+      'Poussettes & sieges',
+      'Vetements bebe',
+      'Fournitures scolaires',
+      'Eveil & educatif',
+    ],
+  ),
+  DomainCategory(
+    id: 'culture',
+    name: 'Culture & Papeterie',
+    icon: Icons.menu_book_outlined,
+    subcategories: [
+      'Livres',
+      'Papeterie',
+      'Instruments de musique',
+      'Oeuvres d\'art',
+      'Films & musique',
+      'Fournitures de bureau',
+    ],
+  ),
+  DomainCategory(
+    id: 'agriculture',
+    name: 'Agriculture & Jardinage',
+    icon: Icons.eco_outlined,
+    subcategories: [
+      'Semences',
+      'Engrais & traitements',
+      'Outils agricoles',
+      'Irrigation',
+      'Plantes & fleurs',
+      'Serres & baches',
+      'Materiel d\'elevage',
+    ],
+  ),
+  DomainCategory(
+    id: 'energie',
+    name: 'Energie & Solaire',
+    icon: Icons.wb_sunny_outlined,
+    subcategories: [
+      'Panneaux solaires',
+      'Batteries & onduleurs',
+      'Groupes electrogenes',
+      'Lampes solaires',
+      'Cablage & regulation',
+      'Chauffe-eau solaire',
+    ],
+  ),
+  DomainCategory(
+    id: 'industrie',
+    name: 'Industrie & Pro',
+    icon: Icons.factory_outlined,
+    subcategories: [
+      'Machines & equipements',
+      'Emballage',
+      'Fournitures pro',
+      'Securite & EPI',
+      'Nettoyage industriel',
+      'Signaletique',
+    ],
+  ),
+  DomainCategory(
+    id: 'artisanat',
+    name: 'Artisanat & Fait-main',
+    icon: Icons.cut_outlined,
+    subcategories: [
+      'Poterie & ceramique',
+      'Vannerie',
+      'Sculpture & bois',
+      'Tissage',
+      'Savonnerie artisanale',
+      'Bougies & senteurs',
+    ],
+  ),
+  DomainCategory(
+    id: 'services',
+    name: 'Services & Locations',
+    icon: Icons.handyman_outlined,
+    subcategories: [
+      'Location de materiel',
+      'Reparation & maintenance',
+      'Transport & demenagement',
+      'Evenementiel',
+      'Impression & communication',
+      'Installation & pose',
+    ],
   ),
 ];

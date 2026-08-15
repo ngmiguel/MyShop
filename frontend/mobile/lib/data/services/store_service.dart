@@ -44,4 +44,29 @@ class StoreService {
     );
     return response.data as Map<String, dynamic>;
   }
+
+  Future<StoreModel> createStore(Map<String, dynamic> payload) async {
+    final response = await _client.dio.post(
+      '${ApiConfig.storesPath}/stores',
+      data: payload,
+    );
+    return StoreModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<StoreModel> updateStore(String id, Map<String, dynamic> payload) async {
+    final response = await _client.dio.patch(
+      '${ApiConfig.storesPath}/stores/$id',
+      data: payload,
+    );
+    return StoreModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<String> regenerateAccessCode(String id) async {
+    final response = await _client.dio.post(
+      '${ApiConfig.storesPath}/stores/$id/regenerate-access-code',
+      data: {},
+    );
+    final data = response.data as Map<String, dynamic>;
+    return data['accessCode']?.toString() ?? data['code']?.toString() ?? '';
+  }
 }
