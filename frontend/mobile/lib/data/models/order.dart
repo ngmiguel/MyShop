@@ -117,6 +117,52 @@ class OrderModel {
 
   bool get isPending => status == 'pending';
 
+  OrderModel copyWith({
+    String? id,
+    String? reference,
+    String? userId,
+    String? storeId,
+    List<CartItemModel>? items,
+    double? subtotal,
+    double? tax,
+    double? discount,
+    double? total,
+    String? currency,
+    String? status,
+    String? fulfillmentMode,
+    String? contactName,
+    String? contactPhone,
+    String? contactEmail,
+    String? paymentMethod,
+    String? qrPayload,
+    DateTime? expiresAt,
+    DateTime? redeemedAt,
+    DateTime? createdAt,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      reference: reference ?? this.reference,
+      userId: userId ?? this.userId,
+      storeId: storeId ?? this.storeId,
+      items: items ?? this.items,
+      subtotal: subtotal ?? this.subtotal,
+      tax: tax ?? this.tax,
+      discount: discount ?? this.discount,
+      total: total ?? this.total,
+      currency: currency ?? this.currency,
+      status: status ?? this.status,
+      fulfillmentMode: fulfillmentMode ?? this.fulfillmentMode,
+      contactName: contactName ?? this.contactName,
+      contactPhone: contactPhone ?? this.contactPhone,
+      contactEmail: contactEmail ?? this.contactEmail,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      qrPayload: qrPayload ?? this.qrPayload,
+      expiresAt: expiresAt ?? this.expiresAt,
+      redeemedAt: redeemedAt ?? this.redeemedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
       id: json['id'] as String,
@@ -163,6 +209,13 @@ class SellerModel {
     this.firstName,
     this.lastName,
     this.email,
+    this.phone,
+    this.position,
+    this.rating,
+    this.ratingCount,
+    this.salesCount,
+    this.revenue,
+    this.joinedAt,
   });
 
   final String id;
@@ -172,6 +225,13 @@ class SellerModel {
   final String? firstName;
   final String? lastName;
   final String? email;
+  final String? phone;
+  final String? position;
+  final double? rating;
+  final int? ratingCount;
+  final int? salesCount;
+  final double? revenue;
+  final DateTime? joinedAt;
 
   String get displayName {
     if (firstName != null) return '$firstName ${lastName ?? ''}'.trim();
@@ -181,12 +241,31 @@ class SellerModel {
   factory SellerModel.fromJson(Map<String, dynamic> json) {
     return SellerModel(
       id: json['id'] as String,
-      storeId: json['storeId'] as String,
-      status: json['status'] as String? ?? 'pending',
+      storeId: json['storeId'] as String? ?? json['boutiqueId'] as String? ?? '',
+      status: json['status'] as String? ?? json['statut'] as String? ?? 'pending',
       userId: json['userId'] as String?,
-      firstName: json['firstName'] as String?,
-      lastName: json['lastName'] as String?,
+      firstName: json['firstName'] as String? ?? json['prenom'] as String?,
+      lastName: json['lastName'] as String? ?? json['nom'] as String?,
       email: json['email'] as String?,
+      phone: json['phone'] as String? ?? json['telephone'] as String?,
+      position: json['position'] as String? ?? json['poste'] as String?,
+      rating: json['rating'] != null
+          ? (json['rating'] as num).toDouble()
+          : json['note'] != null
+              ? (json['note'] as num).toDouble()
+              : null,
+      ratingCount: json['ratingCount'] as int? ?? json['avis'] as int?,
+      salesCount: json['salesCount'] as int? ?? json['scansConfirmes'] as int?,
+      revenue: json['revenue'] != null
+          ? (json['revenue'] as num).toDouble()
+          : json['caGenere'] != null
+              ? (json['caGenere'] as num).toDouble()
+              : null,
+      joinedAt: json['joinedAt'] != null
+          ? DateTime.tryParse(json['joinedAt'].toString())
+          : json['dateEmbauche'] != null
+              ? DateTime.tryParse(json['dateEmbauche'].toString())
+              : null,
     );
   }
 }

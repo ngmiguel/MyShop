@@ -7,12 +7,18 @@ class UserPreferences {
     this.domains = const [],
     this.subcategories = const [],
     this.budget = 'illimite',
-    this.city = 'Abidjan',
+    this.city = 'Douala',
     this.radiusKm = 15,
     this.preferredMode = 'peu-importe',
     this.promosOnly = false,
     this.localOnly = true,
     this.themeMode = 'systeme',
+    this.textScale = 'normal',
+    this.density = 'confortable',
+    this.reduceMotion = false,
+    this.scannerSound = true,
+    this.scannerVibrate = true,
+    this.scannerAutoConfirm = false,
   });
 
   final bool onboardingDone;
@@ -26,6 +32,21 @@ class UserPreferences {
   final bool promosOnly;
   final bool localOnly;
   final String themeMode;
+  final String textScale; // compact | normal | large
+  final String density; // compact | confortable
+  final bool reduceMotion;
+  final bool scannerSound;
+  final bool scannerVibrate;
+  final bool scannerAutoConfirm;
+
+  double get textScaleFactor => switch (textScale) {
+        'compact' => 0.92,
+        'large' => 1.12,
+        _ => 1.0,
+      };
+
+  VisualDensity get visualDensity =>
+      density == 'compact' ? VisualDensity.compact : VisualDensity.comfortable;
 
   UserPreferences copyWith({
     bool? onboardingDone,
@@ -39,6 +60,12 @@ class UserPreferences {
     bool? promosOnly,
     bool? localOnly,
     String? themeMode,
+    String? textScale,
+    String? density,
+    bool? reduceMotion,
+    bool? scannerSound,
+    bool? scannerVibrate,
+    bool? scannerAutoConfirm,
   }) {
     return UserPreferences(
       onboardingDone: onboardingDone ?? this.onboardingDone,
@@ -52,6 +79,12 @@ class UserPreferences {
       promosOnly: promosOnly ?? this.promosOnly,
       localOnly: localOnly ?? this.localOnly,
       themeMode: themeMode ?? this.themeMode,
+      textScale: textScale ?? this.textScale,
+      density: density ?? this.density,
+      reduceMotion: reduceMotion ?? this.reduceMotion,
+      scannerSound: scannerSound ?? this.scannerSound,
+      scannerVibrate: scannerVibrate ?? this.scannerVibrate,
+      scannerAutoConfirm: scannerAutoConfirm ?? this.scannerAutoConfirm,
     );
   }
 
@@ -63,13 +96,19 @@ class UserPreferences {
       domains: (json['domains'] as List?)?.cast<String>() ?? [],
       subcategories: (json['subcategories'] as List?)?.cast<String>() ?? [],
       budget: _migrateBudget(json['budget'] as String?),
-      city: json['city'] as String? ?? 'Abidjan',
+      city: json['city'] as String? ?? 'Douala',
       radiusKm: json['radiusKm'] as int? ?? 15,
       preferredMode: json['preferredMode'] as String? ?? 'peu-importe',
       promosOnly: json['promosOnly'] as bool? ?? false,
       localOnly: json['localOnly'] as bool? ?? true,
       themeMode: json['themeMode'] as String? ??
           (legacyDark ? 'sombre' : 'systeme'),
+      textScale: json['textScale'] as String? ?? 'normal',
+      density: json['density'] as String? ?? 'confortable',
+      reduceMotion: json['reduceMotion'] as bool? ?? false,
+      scannerSound: json['scannerSound'] as bool? ?? true,
+      scannerVibrate: json['scannerVibrate'] as bool? ?? true,
+      scannerAutoConfirm: json['scannerAutoConfirm'] as bool? ?? false,
     );
   }
 
@@ -85,6 +124,12 @@ class UserPreferences {
         'promosOnly': promosOnly,
         'localOnly': localOnly,
         'themeMode': themeMode,
+        'textScale': textScale,
+        'density': density,
+        'reduceMotion': reduceMotion,
+        'scannerSound': scannerSound,
+        'scannerVibrate': scannerVibrate,
+        'scannerAutoConfirm': scannerAutoConfirm,
       };
 }
 
@@ -128,21 +173,39 @@ DomainCategory? domainById(String id) {
   }
 }
 
-const intentions = [
+const intentions = <(String, String, IconData)>[
   ('quotidien', 'Achats du quotidien', Icons.shopping_cart_outlined),
   ('projet', 'Un projet de construction', Icons.construction_outlined),
-  ('pro', 'Equiper mon activite', Icons.work_outline),
+  ('pro', 'Équiper mon activité', Icons.work_outline),
   ('plaisir', 'Me faire plaisir', Icons.auto_awesome_outlined),
-  ('revente', 'Acheter pour revendre', Icons.repeat_outlined),
+  ('revente', 'Acheter pour revendre', Icons.sync_alt),
 ];
 
 const budgets = [
   ('petit', 'Moins de 10 000 F'),
-  ('moyen', '10 000 - 100 000 F'),
-  ('large', '100 000 - 1 M F'),
+  ('moyen', '10 000 – 100 000 F'),
+  ('large', '100 000 – 1 M F'),
   ('illimite', 'Aucune limite'),
 ];
 
+String budgetLabel(String key) {
+  for (final item in budgets) {
+    if (item.$1 == key) return item.$2;
+  }
+  return key;
+}
+
+const onboardingCities = [
+  'Douala',
+  'Yaoundé',
+  'Bafoussam',
+  'Bamenda',
+  'Garoua',
+  'Kribi',
+  'Abidjan',
+];
+
+IconData domainIcon(String id) => domainById(id)?.icon ?? Icons.sell_outlined;
 const domainCategories = [
   DomainCategory(
     id: 'agro',

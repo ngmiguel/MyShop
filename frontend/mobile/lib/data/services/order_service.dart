@@ -173,6 +173,14 @@ class SellerApiService {
           .map((e) => SellerModel.fromJson(e as Map<String, dynamic>))
           .toList();
     }
+    if (data is Map) {
+      final items = data['data'] ?? data['items'] ?? data['sellers'] ?? [];
+      if (items is List) {
+        return items
+            .map((e) => SellerModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    }
     return [];
   }
 
@@ -182,5 +190,19 @@ class SellerApiService {
 
   Future<void> suspendSeller(String id) async {
     await _client.dio.patch('${ApiConfig.sellersPath}/sellers/$id/suspend');
+  }
+
+  Future<void> activateSeller(String id) async {
+    await _client.dio.patch('${ApiConfig.sellersPath}/sellers/$id/activate');
+  }
+
+  Future<Map<String, dynamic>?> getSellerPerformance(String id) async {
+    try {
+      final response = await _client.dio.get('${ApiConfig.sellersPath}/sellers/$id/performance');
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    } catch (_) {}
+    return null;
   }
 }

@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/preferences_provider.dart';
-import '../../screens/auth/login_screen.dart';
+import '../../screens/auth/connexion_manager_screen.dart';
+import '../../screens/auth/connexion_vendeur_screen.dart';
+import '../../screens/auth/inscription_vendeur_screen.dart';
 import '../../screens/auth/role_choice_screen.dart';
 import '../../screens/client/cart_screen.dart';
 import '../../screens/client/checkout_screen.dart';
@@ -18,19 +20,25 @@ import '../../screens/manager/create_store_screen.dart';
 import '../../screens/manager/manager_screens.dart';
 import '../../screens/manager/monitoring_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
+import '../../screens/vendeur/vendeur_performance_screen.dart';
 import '../../screens/vendeur/vendeur_screens.dart';
+import '../../screens/vendeur/vendeur_stock_screen.dart';
 import '../../widgets/bottom_nav_shell.dart';
 
 class AppRouter {
-  static GoRouter create() {
+  static GoRouter create({
+    required AuthProvider auth,
+    required PreferencesProvider preferences,
+  }) {
     return GoRouter(
       initialLocation: '/',
+      refreshListenable: Listenable.merge([auth, preferences]),
       redirect: (context, state) {
-        final prefs = context.read<PreferencesProvider>();
-        final auth = context.read<AuthProvider>();
+        final prefs = preferences;
+        final authState = auth;
         final loc = state.matchedLocation;
 
-        if (auth.loading) return null;
+        if (authState.loading) return null;
 
         if (!prefs.onboardingDone &&
             loc != '/onboarding' &&
@@ -39,21 +47,19 @@ class AppRouter {
         }
 
         if (loc == '/') {
-          if (auth.role == 'manager') return '/manager';
-          if (auth.role == 'vendeur') return '/vendeur';
+          if (authState.role == 'manager') return '/manager';
+          if (authState.role == 'vendeur') return '/vendeur';
           return '/client';
         }
 
-        if (loc.startsWith('/vendeur') &&
-            !loc.startsWith('/auth') &&
-            auth.role != 'vendeur') {
-          return '/auth/login?role=vendeur';
+        // Sans le bon rôle : renvoyer vers le choix d'espace (pas un login forcé)
+        // pour pouvoir revenir facilement à l'espace client.
+        if (loc.startsWith('/vendeur') && authState.role != 'vendeur') {
+          return '/auth';
         }
 
-        if (loc.startsWith('/manager') &&
-            !loc.startsWith('/auth') &&
-            auth.role != 'manager') {
-          return '/auth/login?role=manager';
+        if (loc.startsWith('/manager') && authState.role != 'manager') {
+          return '/auth';
         }
 
         return null;
@@ -68,10 +74,25 @@ class AppRouter {
           builder: (_, __) => const RoleChoiceScreen(),
           routes: [
             GoRoute(
+              path: 'vendeur',
+              builder: (_, __) => const ConnexionVendeurScreen(),
+            ),
+            GoRoute(
+              path: 'manager',
+              builder: (_, __) => const ConnexionManagerScreen(),
+            ),
+            GoRoute(
+              path: 'inscription-vendeur',
+              builder: (_, __) => const InscriptionVendeurScreen(),
+            ),
+            // Compatibilité anciens liens ?role=
+            GoRoute(
               path: 'login',
-              builder: (context, state) {
-                final role = state.uri.queryParameters['role'] ?? 'client';
-                return LoginScreen(role: role);
+              redirect: (context, state) {
+                final role = state.uri.queryParameters['role'];
+                if (role == 'manager') return '/auth/manager';
+                if (role == 'vendeur') return '/auth/vendeur';
+                return '/auth';
               },
             ),
           ],
@@ -141,6 +162,10 @@ class AppRouter {
             GoRoute(path: '/manager/parametres', builder: (_, __) => const ManagerSettingsScreen()),
           ],
         ),
+        GoRoute(path: '/vendeur/performance', builder: (_, __) => const VendeurPerformanceScreen()),
+        GoRoute(path: '/vendeur/stock', builder: (_, __) => const VendeurStockScreen()),
+        GoRoute(path: '/manager/analytics', builder: (_, __) => const ManagerAnalyticsScreen()),
+        GoRoute(path: '/manager/models', builder: (_, __) => const ManagerModelsScreen()),
         GoRoute(path: '/manager/monitoring', builder: (_, __) => const ManagerMonitoringScreen()),
         GoRoute(path: '/manager/boutiques/nouvelle', builder: (_, __) => const CreateStoreScreen()),
         GoRoute(

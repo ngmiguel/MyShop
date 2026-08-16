@@ -8,7 +8,30 @@ final _priceFormat = NumberFormat.currency(
 
 String formatPrix(num value) => _priceFormat.format(value);
 
+/// Format compact type « 8,4 M » / « 420 k » (prototype Boutika).
+String formatMontantCourt(num value) {
+  final v = value.abs();
+  final sign = value < 0 ? '−' : '';
+  if (v >= 1000000) {
+    final m = v / 1000000;
+    final text = m == m.roundToDouble() ? m.toStringAsFixed(0) : m.toStringAsFixed(1).replaceAll('.0', '');
+    return '$sign$text M';
+  }
+  if (v >= 1000) {
+    return '$sign${(v / 1000).round()} k';
+  }
+  return '$sign${v.round()}';
+}
+
 String formatDate(DateTime date) {
+  return DateFormat('dd/MM/yyyy', 'fr_FR').format(date);
+}
+
+String formatHeure(DateTime date) {
+  return DateFormat('HH:mm', 'fr_FR').format(date);
+}
+
+String formatDateTime(DateTime date) {
   return DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(date);
 }
 
@@ -19,13 +42,14 @@ String formatCourt(DateTime date) {
 String statutCommande(String status) {
   switch (status) {
     case 'pending':
-      return 'En attente';
+      return 'En attente de scan';
     case 'redeemed':
-      return 'Encaisse';
+    case 'confirmed':
+      return 'Paiement confirmé';
     case 'expired':
-      return 'Expire';
+      return 'Expiré';
     case 'cancelled':
-      return 'Annule';
+      return 'Annulé';
     default:
       return status;
   }

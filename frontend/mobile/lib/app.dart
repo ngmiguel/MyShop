@@ -18,6 +18,7 @@ import 'providers/catalog_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/orders_provider.dart';
 import 'providers/preferences_provider.dart';
+import 'providers/profit_settings_provider.dart';
 import 'widgets/common_widgets.dart';
 
 class MyShopApp extends StatefulWidget {
@@ -40,6 +41,7 @@ class _MyShopAppState extends State<MyShopApp> {
   late final FavoritesProvider _favoritesProvider;
   late final AuthProvider _authProvider;
   late final PreferencesProvider _preferencesProvider;
+  late final ProfitSettingsProvider _profitSettingsProvider;
   late final CatalogProvider _catalogProvider;
   late final CartProvider _cartProvider;
   late final OrdersProvider _ordersProvider;
@@ -69,6 +71,7 @@ class _MyShopAppState extends State<MyShopApp> {
       authService: _authService,
     );
     _preferencesProvider = PreferencesProvider(_storage);
+    _profitSettingsProvider = ProfitSettingsProvider();
     _catalogProvider = CatalogProvider(_catalogService, _storeService);
     _cartProvider = CartProvider(_orderService, _authProvider);
     _ordersProvider = OrdersProvider(_orderService, _authProvider);
@@ -77,10 +80,20 @@ class _MyShopAppState extends State<MyShopApp> {
     await Future.wait([
       _authProvider.init(),
       _preferencesProvider.init(),
+      _profitSettingsProvider.init(),
       _favoritesProvider.init(),
     ]);
 
-    _router = AppRouter.create();
+    await Future.wait([
+      _catalogProvider.loadFeed(),
+      _cartProvider.loadCart(),
+      _ordersProvider.loadOrders(),
+    ]);
+
+    _router = AppRouter.create(
+      auth: _authProvider,
+      preferences: _preferencesProvider,
+    );
 
     if (mounted) {
       setState(() => _ready = true);
@@ -105,6 +118,7 @@ class _MyShopAppState extends State<MyShopApp> {
         Provider.value(value: _sellerApiService),
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider.value(value: _preferencesProvider),
+        ChangeNotifierProvider.value(value: _profitSettingsProvider),
         ChangeNotifierProvider.value(value: _favoritesProvider),
         ChangeNotifierProvider.value(value: _catalogProvider),
         ChangeNotifierProvider.value(value: _cartProvider),
@@ -112,15 +126,26 @@ class _MyShopAppState extends State<MyShopApp> {
       ],
       child: Consumer<PreferencesProvider>(
         builder: (context, prefs, _) {
+          final p = prefs.preferences;
           return MaterialApp.router(
             title: 'MyShop',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: switch (prefs.preferences.themeMode) {
+            theme: AppTheme.light().copyWith(visualDensity: p.visualDensity),
+            darkTheme: AppTheme.dark().copyWith(visualDensity: p.visualDensity),
+            themeMode: switch (p.themeMode) {
               'sombre' => ThemeMode.dark,
               'clair' => ThemeMode.light,
               _ => ThemeMode.system,
+            },
+            builder: (context, child) {
+              final media = MediaQuery.of(context);
+              return MediaQuery(
+                data: media.copyWith(
+                  textScaler: TextScaler.linear(p.textScaleFactor),
+                  disableAnimations: p.reduceMotion || media.disableAnimations,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
             },
             routerConfig: _router,
           );

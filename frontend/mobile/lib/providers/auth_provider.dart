@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/demo/demo_accounts.dart';
 import '../data/models/user.dart';
 import '../data/services/api_client.dart';
 import '../data/services/auth_service.dart';
@@ -93,7 +94,7 @@ class AuthProvider extends ChangeNotifier {
         response = await _authService.login(email: email, password: password);
       }
       if (expectedRole != null && response.user.role != expectedRole) {
-        _error = 'Ce compte n\'a pas le role attendu.';
+        _error = 'Ce compte n\'a pas le rôle attendu.';
         _loading = false;
         notifyListeners();
         return false;
@@ -102,12 +103,145 @@ class AuthProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
       return true;
-    } catch (e) {
-      _error = e.toString();
+    } catch (_) {
+      return _loginDemo(email, password, expectedRole: expectedRole);
+    }
+  }
+
+  Future<bool> loginDemoGoogle({
+    String email = 'awa.kone@gmail.com',
+    String? firstName,
+    String? lastName,
+  }) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    final user = demoGoogleUser(email: email, firstName: firstName, lastName: lastName);
+    await _storage.saveTokens(accessToken: 'demo-token', refreshToken: 'demo-refresh');
+    await _storage.saveUser(user.toJson());
+    _user = user;
+    _loading = false;
+    notifyListeners();
+    return true;
+  }
+
+  bool get isGoogleClient => _user?.role == 'client';
+
+  Future<bool> loginDemoSeller({
+    required String storeId,
+    required String email,
+    required String password,
+  }) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    final seller = findDemoSeller(storeId: storeId, email: email);
+    if (seller == null) {
+      _error = 'Aucun compte vendeur ne correspond à cette boutique.';
       _loading = false;
       notifyListeners();
       return false;
     }
+    if (password.length < 4) {
+      _error = 'Mot de passe trop court.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+    if (password != seller.password) {
+      _error = 'Mot de passe incorrect.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+    if (seller.status == 'pending') {
+      _error = 'Votre inscription est en attente de validation par le manageur.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+    if (seller.status == 'suspended') {
+      _error = 'Ce compte est suspendu. Contactez votre manageur.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+    final user = UserModel(
+      id: 'demo-seller-${seller.email.hashCode}',
+      email: seller.email,
+      role: 'vendeur',
+      firstName: seller.firstName,
+      lastName: seller.lastName,
+      storeId: seller.storeId,
+    );
+    await _storage.saveTokens(accessToken: 'demo-token', refreshToken: 'demo-refresh');
+    await _storage.saveUser(user.toJson());
+    _user = user;
+    _loading = false;
+    notifyListeners();
+    return true;
+  }
+
+  Future<String?> registerDemoSeller({
+    required String storeId,
+    required String accessCode,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String email,
+    required String password,
+    String jobTitle = 'Vendeur',
+    bool requireManagerValidation = true,
+  }) async {
+    final expected = storeAccessCode(storeId);
+    if (expected == null || expected.toUpperCase() != accessCode.trim().toUpperCase()) {
+      return 'Mot de passe boutique invalide. Demandez-le à votre manageur.';
+    }
+    if (emailAlreadyUsed(email)) {
+      return 'Un compte utilise déjà cet e-mail.';
+    }
+    final seller = DemoSellerAccount(
+      email: email.trim(),
+      password: password,
+      storeId: storeId,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      status: requireManagerValidation ? 'pending' : 'active',
+    );
+    addRegisteredDemoSeller(seller);
+    if (!requireManagerValidation) {
+      await loginDemoSeller(storeId: storeId, email: email, password: password);
+      return null;
+    }
+    return 'pending';
+  }
+
+  Future<bool> _loginDemo(String email, String password, {String? expectedRole}) async {
+    if (expectedRole == 'manager') {
+      final user = demoManagerUser(email, password);
+      if (user == null) {
+        _error = 'Identifiants administrateur incorrects.';
+        _loading = false;
+        notifyListeners();
+        return false;
+      }
+      await _storage.saveTokens(accessToken: 'demo-token', refreshToken: 'demo-refresh');
+      await _storage.saveUser(user.toJson());
+      _user = user;
+      _loading = false;
+      notifyListeners();
+      return true;
+    }
+    if (expectedRole == 'vendeur') {
+      _error = 'Connexion impossible. Utilisez un compte vendeur de démonstration.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+    _error = 'Connexion impossible. Vérifiez vos identifiants ou utilisez le mode démo.';
+    _loading = false;
+    notifyListeners();
+    return false;
   }
 
   Future<bool> register({

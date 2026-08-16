@@ -40,6 +40,12 @@ class FavoritesProvider extends ChangeNotifier {
     _ids.addAll(local);
   }
 
+  Future<void> clear() async {
+    _ids.clear();
+    await _storage.saveLocalFavorites([]);
+    notifyListeners();
+  }
+
   Future<void> toggle(String productId) async {
     final wasFavorite = _ids.contains(productId);
     if (wasFavorite) {
