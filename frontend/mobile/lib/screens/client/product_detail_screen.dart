@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../data/demo/demo_images.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/favorites_provider.dart';
@@ -45,6 +46,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final isFavorite = favorites.isFavorite(product.id);
         final similar = context.watch<CatalogProvider>().products.where((p) => p.storeId == product.storeId && p.id != product.id).take(4).toList();
 
+        final gallery = productGalleryUrls(productId: product.id, categoryId: product.categoryId, count: 4);
+        final heroImage = product.imageUrl ?? productImageUrl(productId: product.id, categoryId: product.categoryId);
+
         return Scaffold(
           backgroundColor: AppTheme.contentBackground(context),
           appBar: TopBar(title: product.name),
@@ -57,9 +61,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     borderRadius: BorderRadius.circular(16),
                     child: AspectRatio(
                       aspectRatio: 1,
-                      child: product.imageUrl != null
-                          ? CachedNetworkImage(imageUrl: product.imageUrl!, fit: BoxFit.cover)
-                          : Container(color: AppTheme.ink50, child: const Icon(Icons.image_outlined, size: 64)),
+                      child: CachedNetworkImage(
+                        imageUrl: heroImage,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -85,6 +92,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 72,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: gallery.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) => ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 72,
+                      height: 72,
+                      child: CachedNetworkImage(
+                        imageUrl: gallery[index],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -131,7 +160,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.58),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: productGridAspectRatio),
                   itemCount: similar.length,
                   itemBuilder: (context, index) => ProductCard(product: similar[index]),
                 ),
@@ -225,7 +254,12 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                       height: 180,
                       width: double.infinity,
                       child: store.coverUrl != null
-                          ? CachedNetworkImage(imageUrl: store.coverUrl!, fit: BoxFit.cover)
+                          ? CachedNetworkImage(
+                              imageUrl: store.coverUrl!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            )
                           : Container(color: AppTheme.ink800),
                     ),
                     Positioned(
@@ -294,7 +328,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.58),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: productGridAspectRatio),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => ProductCard(
                       product: products[index],

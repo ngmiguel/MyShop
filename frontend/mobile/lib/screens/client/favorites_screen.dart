@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -19,16 +20,20 @@ class FavoritesScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.contentBackground(context),
-      appBar: const TopBar(
-        title: 'Favoris',
-        subtitle: 'Articles enregistres',
+      appBar: TopBar(
+        title: 'Mes favoris',
+        subtitle: '${products.length} article${products.length > 1 ? 's' : ''} enregistré${products.length > 1 ? 's' : ''}',
         showBack: false,
       ),
       body: products.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.favorite_border,
               title: 'Aucun favori',
-              subtitle: 'Appuyez sur le coeur d\'un article pour l\'ajouter ici.',
+              subtitle: 'Touchez le cœur sur un article pour le retrouver ici, même hors connexion.',
+              action: FilledButton(
+                onPressed: () => context.go('/client'),
+                child: const Text('Explorer les articles'),
+              ),
             )
           : GridView.builder(
               padding: const EdgeInsets.all(16),
@@ -36,7 +41,7 @@ class FavoritesScreen extends StatelessWidget {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.58,
+                childAspectRatio: productGridAspectRatio,
               ),
               itemCount: products.length,
               itemBuilder: (context, index) => ProductCard(product: products[index]),

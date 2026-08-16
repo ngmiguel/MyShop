@@ -12,6 +12,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../widgets/app_layout.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/google_sign_in_sheet.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/store_card.dart';
 
@@ -150,159 +151,180 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
         ? _availableSubcategories(_domainFilter, catalog.products)
         : <String>[];
 
-    return RefreshIndicator(
-      onRefresh: _load,
-      color: AppTheme.accent500,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildHeader(context, prefs, auth)),
-          if (catalog.loading)
-            const SliverFillRemaining(child: LoadingView(message: 'Chargement du catalogue...'))
-          else if (catalog.error != null)
-            SliverFillRemaining(
-              child: EmptyState(
-                icon: Icons.cloud_off_outlined,
-                title: 'Impossible de charger le catalogue',
-                subtitle: catalog.error,
-                action: ElevatedButton(onPressed: _load, child: const Text('Reessayer')),
-              ),
-            )
-          else
-            SliverToBoxAdapter(
-              child: ContentSheet(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    HorizontalChipList(
-                      children: [
-                        AppChip(
-                          active: _domainFilter == 'pour-vous',
-                          onTap: () => setState(() {
-                            _domainFilter = 'pour-vous';
-                            _subcategoryFilter = null;
-                            _sort = _SortMode.pourVous;
-                          }),
-                          leading: const Icon(Icons.auto_awesome_outlined, size: 14, color: AppTheme.accent500),
-                          label: const Text('Pour vous'),
-                        ),
-                        AppChip(
-                          active: _domainFilter == 'tout',
-                          onTap: () => setState(() {
-                            _domainFilter = 'tout';
-                            _subcategoryFilter = null;
-                          }),
-                          label: const Text('Tout le catalogue'),
-                        ),
-                        ...domainIds.map((id) {
-                          final domain = domainById(id);
-                          if (domain == null) return const SizedBox.shrink();
-                          final preferred = prefs.domains.contains(id);
-                          return AppChip(
-                            active: _domainFilter == id,
-                            bold: preferred,
-                            onTap: () => setState(() {
-                              _domainFilter = id;
-                              _subcategoryFilter = null;
-                              if (_sort == _SortMode.pourVous) _sort = _SortMode.popularite;
-                            }),
-                            leading: Icon(domain.icon, size: 14, color: preferred ? AppTheme.accent500 : AppTheme.ink400),
-                            label: Text(domain.name),
-                          );
-                        }),
-                      ],
+    return Column(
+      children: [
+        _buildHeader(context, prefs, auth),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            color: AppTheme.accent500,
+            child: CustomScrollView(
+              slivers: [
+                if (catalog.loading)
+                  const SliverFillRemaining(child: LoadingView(message: 'Chargement du catalogue…'))
+                else if (catalog.error != null)
+                  SliverFillRemaining(
+                    child: EmptyState(
+                      icon: Icons.cloud_off_outlined,
+                      title: 'Impossible de charger le catalogue',
+                      subtitle: catalog.error,
+                      action: ElevatedButton(onPressed: _load, child: const Text('Réessayer')),
                     ),
-                    if (subcategories.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      HorizontalChipList(
+                  )
+                else ...[
+                  SliverToBoxAdapter(
+                    child: Container(
+                      width: double.infinity,
+                      color: AppTheme.contentBackground(context),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppChip(
-                            active: _subcategoryFilter == null,
-                            onTap: () => setState(() => _subcategoryFilter = null),
-                            label: const Text('Tous les rayons'),
+                          const SizedBox(height: 20),
+                          HorizontalChipList(
+                            children: [
+                              AppChip(
+                                active: _domainFilter == 'pour-vous',
+                                onTap: () => setState(() {
+                                  _domainFilter = 'pour-vous';
+                                  _subcategoryFilter = null;
+                                  _sort = _SortMode.pourVous;
+                                }),
+                                leading: const Icon(Icons.auto_awesome_outlined, size: 14, color: AppTheme.accent500),
+                                label: const Text('Pour vous'),
+                              ),
+                              AppChip(
+                                active: _domainFilter == 'tout',
+                                onTap: () => setState(() {
+                                  _domainFilter = 'tout';
+                                  _subcategoryFilter = null;
+                                }),
+                                label: const Text('Tout le catalogue'),
+                              ),
+                              ...domainIds.map((id) {
+                                final domain = domainById(id);
+                                if (domain == null) return const SizedBox.shrink();
+                                final preferred = prefs.domains.contains(id);
+                                return AppChip(
+                                  active: _domainFilter == id,
+                                  bold: preferred,
+                                  onTap: () => setState(() {
+                                    _domainFilter = id;
+                                    _subcategoryFilter = null;
+                                    if (_sort == _SortMode.pourVous) _sort = _SortMode.popularite;
+                                  }),
+                                  leading: Icon(
+                                    domainIcon(id),
+                                    size: 14,
+                                    color: preferred ? AppTheme.accent500 : AppTheme.ink400,
+                                  ),
+                                  label: Text(domain.name),
+                                );
+                              }),
+                            ],
                           ),
-                          ...subcategories.map(
-                            (sub) => AppChip(
-                              active: _subcategoryFilter == sub,
-                              onTap: () => setState(() => _subcategoryFilter = sub),
-                              label: Text(sub),
+                          if (subcategories.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            HorizontalChipList(
+                              children: [
+                                AppChip(
+                                  active: _subcategoryFilter == null,
+                                  onTap: () => setState(() => _subcategoryFilter = null),
+                                  label: const Text('Tous les rayons'),
+                                ),
+                                ...subcategories.map(
+                                  (sub) => AppChip(
+                                    active: _subcategoryFilter == sub,
+                                    onTap: () => setState(() => _subcategoryFilter = sub),
+                                    label: Text(sub),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (_domainFilter == 'pour-vous' && stores.isNotEmpty) ...[
+                            SectionHeader(
+                              title: 'Boutiques pour vous',
+                              action: TextButton(
+                                onPressed: () => context.go('/onboarding'),
+                                child: const Text('Personnaliser', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                            SizedBox(
+                              height: 200,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: stores.length,
+                                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                                itemBuilder: (context, index) {
+                                  final store = stores[index];
+                                  return StoreCard(
+                                    store: store,
+                                    compact: true,
+                                    productCount: catalog.productsForStore(store.id).length,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                          SectionHeader(
+                            title: _domainFilter == 'pour-vous'
+                                ? 'Sélection pour vous · ${products.length}'
+                                : '${products.length} article${products.length > 1 ? 's' : ''}',
+                            subtitle: _domainFilter == 'tout'
+                                ? 'Tous les univers'
+                                : _domainFilter == 'pour-vous'
+                                    ? '${prefs.domains.length} univers suivis'
+                                    : _subcategoryFilter ?? domainById(_domainFilter)?.name,
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              _domainFilter == 'pour-vous' && stores.isNotEmpty ? 16 : 8,
+                              16,
+                              8,
                             ),
                           ),
+                          if (products.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: EmptyState(
+                                icon: Icons.search_outlined,
+                                title: 'Aucun résultat',
+                                subtitle: 'Élargissez vos filtres ou modifiez vos préférences.',
+                              ),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: productGridAspectRatio,
+                                ),
+                                itemCount: products.length,
+                                itemBuilder: (context, index) {
+                                  final product = products[index];
+                                  return ProductCard(
+                                    product: product,
+                                    onAdd: () => context.read<CartProvider>().addProduct(product),
+                                  );
+                                },
+                              ),
+                            ),
+                          const SizedBox(height: 24),
                         ],
                       ),
-                    ],
-                    SectionHeader(
-                      title: 'Boutiques pour vous',
-                      action: TextButton(
-                        onPressed: () => context.go('/onboarding'),
-                        child: const Text('Personnaliser', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                      ),
                     ),
-                    SizedBox(
-                      height: 210,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: stores.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final store = stores[index];
-                          return StoreCard(
-                            store: store,
-                            compact: true,
-                            productCount: catalog.productsForStore(store.id).length,
-                          );
-                        },
-                      ),
-                    ),
-                    SectionHeader(
-                      title: _domainFilter == 'pour-vous'
-                          ? 'Selection pour vous - ${products.length}'
-                          : '${products.length} article${products.length > 1 ? 's' : ''}',
-                      subtitle: _domainFilter == 'tout'
-                          ? 'Tous les univers'
-                          : _domainFilter == 'pour-vous'
-                              ? '${prefs.domains.length} univers suivis'
-                              : _subcategoryFilter ?? domainById(_domainFilter)?.name,
-                    ),
-                    if (products.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: EmptyState(
-                          icon: Icons.search_outlined,
-                          title: 'Aucun resultat',
-                          subtitle: 'Elargissez vos filtres ou modifiez vos preferences.',
-                        ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.58,
-                          ),
-                          itemCount: products.length,
-                          itemBuilder: (context, index) {
-                            final product = products[index];
-                            return ProductCard(
-                              product: product,
-                              onAdd: () => context.read<CartProvider>().addProduct(product),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
+                  ),
+                ],
+              ],
             ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -312,41 +334,43 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'Boutika',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.1),
+                    ),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.location_on_outlined, size: 12, color: AppTheme.accent300),
                         const SizedBox(width: 4),
-                        Text(
-                          '${prefs.city} - ${prefs.radiusKm} km',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1,
-                            color: AppTheme.accent300,
+                        Flexible(
+                          child: Text(
+                            prefs.city,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.accent300,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '18 univers de vente,\nfiltres pour vous.',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.15),
-                    ),
                   ],
                 ),
               ),
-              if (auth.isAuthenticated)
+              if (auth.isGoogleClient)
                 Material(
                   color: AppTheme.ink800,
                   borderRadius: BorderRadius.circular(999),
                   child: InkWell(
-                    onTap: () => context.go('/client/parametres'),
+                    onTap: () => context.go('/client/compte'),
                     borderRadius: BorderRadius.circular(999),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
@@ -400,7 +424,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
                   controller: _searchController,
                   style: const TextStyle(color: AppTheme.ink900),
                   decoration: InputDecoration(
-                    hintText: 'Ciment, scooter, cafe, collier...',
+                    hintText: 'Ciment, scooter, café, collier…',
                     hintStyle: const TextStyle(color: AppTheme.ink300),
                     filled: true,
                     fillColor: Colors.white,
@@ -411,6 +435,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     prefixIcon: const Icon(Icons.search, color: AppTheme.ink400, size: 20),
                   ),
+                  onChanged: (_) => setState(() {}),
                   onSubmitted: (_) => setState(() {}),
                 ),
               ),
@@ -434,13 +459,13 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
               ),
             ],
           ),
-          if (!auth.isAuthenticated) ...[
+          if (!auth.isGoogleClient) ...[
             const SizedBox(height: 12),
             Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: () => context.go('/auth'),
+                onTap: () => context.go('/client/compte'),
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
@@ -453,7 +478,8 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
                           color: AppTheme.sand100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.mail_outline, size: 16, color: AppTheme.ink700),
+                        alignment: Alignment.center,
+                        child: const GoogleLogo(size: 16),
                       ),
                       const SizedBox(width: 10),
                       const Expanded(
@@ -465,7 +491,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                             ),
                             Text(
-                              'Tickets, preferences, favoris et panier synchronises',
+                              'Tickets, préférences, favoris et panier synchronisés',
                               style: TextStyle(fontSize: 11, color: AppTheme.ink400),
                             ),
                           ],
@@ -512,11 +538,11 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
             spacing: 6,
             runSpacing: 6,
             children: [
-              _sortChip('Recommande', _SortMode.pourVous),
-              _sortChip('Popularite', _SortMode.popularite),
-              _sortChip('Mieux notes', _SortMode.note),
+              _sortChip('Recommandé', _SortMode.pourVous),
+              _sortChip('Popularité', _SortMode.popularite),
+              _sortChip('Mieux notés', _SortMode.note),
               _sortChip('Prix croissant', _SortMode.prixAsc),
-              _sortChip('Prix decroissant', _SortMode.prixDesc),
+              _sortChip('Prix décroissant', _SortMode.prixDesc),
             ],
           ),
           const SizedBox(height: 12),
@@ -533,7 +559,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
           TextButton.icon(
             onPressed: () => context.go('/onboarding'),
             icon: const Icon(Icons.auto_awesome_outlined, size: 14, color: AppTheme.ink100),
-            label: const Text('Modifier mes preferences', style: TextStyle(color: AppTheme.ink100, fontWeight: FontWeight.w700)),
+            label: const Text('Modifier mes préférences', style: TextStyle(color: AppTheme.ink100, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
