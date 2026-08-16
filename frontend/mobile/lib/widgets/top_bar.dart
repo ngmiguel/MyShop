@@ -11,6 +11,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBack = true,
     this.action,
     this.onBack,
+    this.fallbackRoute = '/client',
   });
 
   final String title;
@@ -18,9 +19,23 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBack;
   final Widget? action;
   final VoidCallback? onBack;
+  /// Utilisé si la pile de navigation est vide (ex. arrivée via `go`).
+  final String fallbackRoute;
 
   @override
   Size get preferredSize => Size.fromHeight(subtitle != null ? 72 : 56);
+
+  void _handleBack(BuildContext context) {
+    if (onBack != null) {
+      onBack!();
+      return;
+    }
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(fallbackRoute);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +51,8 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
               if (showBack)
                 IconButton(
                   icon: const Icon(Icons.chevron_left, size: 28),
-                  onPressed: onBack ?? () => context.pop(),
+                  tooltip: 'Retour',
+                  onPressed: () => _handleBack(context),
                 )
               else
                 const SizedBox(width: 8),

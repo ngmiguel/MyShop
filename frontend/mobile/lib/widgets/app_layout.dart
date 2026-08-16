@@ -64,6 +64,7 @@ class AppChip extends StatelessWidget {
     required this.onTap,
     this.leading,
     this.bold = false,
+    this.dense = false,
   });
 
   final Widget label;
@@ -71,6 +72,7 @@ class AppChip extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? leading;
   final bool bold;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +86,10 @@ class AppChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: dense ? 10 : 14,
+            vertical: dense ? 5 : 8,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_theme.dart';
+import '../data/demo/demo_images.dart';
 import '../data/models/store.dart';
 
 class StoreCard extends StatelessWidget {
@@ -28,34 +29,37 @@ class StoreCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => context.push('/client/boutique/${store.id}'),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 88,
-              height: 88,
-              child: _cover(),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: _info(context),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 88,
+                child: _cover(),
               ),
-            ),
-          ],
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: _info(context),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _cover() {
-    if (store.coverUrl != null) {
-      return CachedNetworkImage(
-        imageUrl: store.coverUrl!,
-        fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => _placeholder(),
-      );
-    }
-    return _placeholder();
+    final url = store.coverUrl ?? storeCoverUrl(storeId: store.id, mainCategory: store.mainCategory);
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      placeholder: (_, _) => _placeholder(),
+      errorWidget: (_, _, _) => _placeholder(),
+    );
   }
 
   Widget _placeholder() {
@@ -67,11 +71,17 @@ class StoreCard extends StatelessWidget {
 
   Widget _info(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(store.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+        Text(
+          store.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
         if (store.tagline != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             store.tagline!,
             maxLines: 1,
@@ -84,8 +94,14 @@ class StoreCard extends StatelessWidget {
           children: [
             const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.ink300),
             const SizedBox(width: 4),
-            Text(store.city, style: const TextStyle(fontSize: 12)),
-            const Spacer(),
+            Expanded(
+              child: Text(
+                store.city,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
             if (store.pickup) const Icon(Icons.storefront_outlined, size: 16, color: AppTheme.ink300),
             if (store.delivery) ...[
               const SizedBox(width: 6),
@@ -106,36 +122,38 @@ class _CompactStoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Remplit la hauteur du parent (ex. ListView horizontale à hauteur fixe)
+    // pour éviter l’overflow AspectRatio + textes.
     return SizedBox(
-      width: 230,
+      width: 220,
       child: Container(
         decoration: AppTheme.cardDecoration(context),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => context.push('/client/boutique/${store.id}'),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AspectRatio(
-                aspectRatio: 16 / 10,
-                child: store.coverUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: store.coverUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => _placeholder(),
-                      )
-                    : _placeholder(),
+              Expanded(
+                child: CachedNetworkImage(
+                  imageUrl: store.coverUrl ?? storeCoverUrl(storeId: store.id, mainCategory: store.mainCategory),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (_, _) => _placeholder(),
+                  errorWidget: (_, _, _) => _placeholder(),
+                ),
               ),
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       store.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                     ),
                     if (store.tagline != null) ...[
                       const SizedBox(height: 2),
@@ -146,7 +164,7 @@ class _CompactStoreCard extends StatelessWidget {
                         style: const TextStyle(fontSize: 11, color: AppTheme.ink400),
                       ),
                     ],
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         const Icon(Icons.location_on_outlined, size: 13, color: AppTheme.ink400),
@@ -162,7 +180,11 @@ class _CompactStoreCard extends StatelessWidget {
                         if (productCount != null)
                           Text(
                             '$productCount art.',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.accent600),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.accent600,
+                            ),
                           ),
                       ],
                     ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_theme.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/orders_provider.dart';
 
@@ -38,12 +39,18 @@ List<NavItem> clientNavItems(BuildContext context) {
       badge: pending,
     ),
     NavItem(path: '/client/gains', label: 'Gains', icon: Icons.savings_outlined),
-    NavItem(path: '/client/parametres', label: 'Reglages', icon: Icons.settings_outlined),
+    NavItem(path: '/client/parametres', label: 'Paramètres', icon: Icons.settings_outlined),
   ];
 }
 
 List<NavItem> vendeurNavItems(BuildContext context) {
-  final pending = context.watch<OrdersProvider>().pendingCount;
+  final auth = context.watch<AuthProvider>();
+  final storeId = auth.user?.storeId;
+  final pending = context
+      .watch<OrdersProvider>()
+      .pendingOrders
+      .where((o) => storeId == null || o.storeId == storeId)
+      .length;
   return [
     NavItem(path: '/vendeur', label: 'Accueil', icon: Icons.home_outlined),
     NavItem(path: '/vendeur/scanner', label: 'Scanner', icon: Icons.qr_code_scanner_outlined),
@@ -145,6 +152,9 @@ class BottomNavShell extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           item.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,

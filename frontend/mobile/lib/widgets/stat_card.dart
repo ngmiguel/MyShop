@@ -10,6 +10,7 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
+    this.delta,
     this.tone = StatTone.neutral,
     this.onTap,
   });
@@ -17,6 +18,7 @@ class StatCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final String? delta;
   final StatTone tone;
   final VoidCallback? onTap;
 
@@ -50,21 +52,49 @@ class StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: AppTheme.cardDecoration(context),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(color: _iconBg, borderRadius: BorderRadius.circular(10)),
-                child: Icon(icon, size: 16, color: _iconColor),
-              ),
-              const Spacer(),
-              Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.ink500)),
-              const SizedBox(height: 4),
-              Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            ],
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final expand = constraints.maxHeight.isFinite;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(color: _iconBg, borderRadius: BorderRadius.circular(8)),
+                    child: Icon(icon, size: 14, color: _iconColor),
+                  ),
+                  if (expand) const Spacer() else const SizedBox(height: 10),
+                  Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: AppTheme.ink500, height: 1.2),
+                  ),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  if (delta != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      delta!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _iconColor),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ),

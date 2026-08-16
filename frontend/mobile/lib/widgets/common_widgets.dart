@@ -78,16 +78,23 @@ class EmptyState extends StatelessWidget {
 }
 
 class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.title, this.action, this.subtitle});
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.action,
+    this.subtitle,
+    this.padding = const EdgeInsets.fromLTRB(16, 16, 16, 8),
+  });
 
   final String title;
   final Widget? action;
   final String? subtitle;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: padding,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
