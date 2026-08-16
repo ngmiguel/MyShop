@@ -1,5 +1,0 @@
-{
-  "typescript.tsdk": "frontend/web/node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.preferences.includePackageJsonAutoImports": "on"
-}
