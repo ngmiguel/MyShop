@@ -31,11 +31,11 @@ import { AppearanceSettingsComponent } from '../../../shared/components/appearan
         <div class="card-head">
           <div>
             <h2>Préférences du fil</h2>
-            <p>Ce qui influence l'onglet « Pour vous »</p>
+            <p>Intention, univers, rayons, budget et zone</p>
           </div>
-          <button type="button" class="btn-outline" (click)="restartOnboarding()">
-            <mat-icon>replay</mat-icon> Rejouer le questionnaire
-          </button>
+          <a routerLink="/client/preferences" class="btn-outline">
+            <mat-icon>tune</mat-icon> Ouvrir
+          </a>
         </div>
         <p class="label"><mat-icon>auto_awesome</mat-icon> Centres d'intérêt ({{ onboarding.state().categories.length }})</p>
         <div class="chips">
@@ -45,6 +45,9 @@ import { AppearanceSettingsComponent } from '../../../shared/components/appearan
             </button>
           }
         </div>
+        <button type="button" class="btn-outline link-btn" (click)="restartOnboarding()">
+          <mat-icon>replay</mat-icon> Rejouer le questionnaire
+        </button>
       </section>
 
       <section class="card">
@@ -157,7 +160,6 @@ export class ClientSettingsComponent {
 
   restartOnboarding(): void {
     this.onboarding.reset();
-    this.router.navigate(['/client/feed']);
-    window.location.reload();
+    void this.router.navigate(['/onboarding']);
   }
 }

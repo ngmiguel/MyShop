@@ -17,6 +17,7 @@ import {
 import { PaymentMethod } from '../../../core/models';
 import { ManagerDataService } from '../../../core/services/manager-data.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { MapPickerComponent } from '../../../shared/components/map-picker/map-picker.component';
 
 const STEPS = ['Identité', 'Catégories', 'Localisation', 'Exploitation', 'Photos', 'Accès vendeurs'];
 const MAX_CATEGORIES = 7;
@@ -34,7 +35,7 @@ const LEGAL_STATUSES = ['SARL', 'SA', 'Entreprise individuelle', 'GIC / Coopéra
 @Component({
   selector: 'app-manager-store-create',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, MatIconModule, MatSlideToggleModule, MatSnackBarModule],
+  imports: [DecimalPipe, FormsModule, MatIconModule, MatSlideToggleModule, MatSnackBarModule, MapPickerComponent],
   template: `
     <div class="page">
       <header class="page-head">
@@ -181,16 +182,11 @@ const LEGAL_STATUSES = ['SARL', 'SA', 'Entreprise individuelle', 'GIC / Coopéra
               </div>
 
               <div>
-                <p class="section-title sm">
-                  Épingle sur la carte — position ({{
-                    draft.lat | number: '1.4-4'
-                  }}, {{ draft.lng | number: '1.4-4' }})
-                </p>
-                <div class="map-preview">
-                  <mat-icon>location_on</mat-icon>
-                  <span>{{ draft.lat | number: '1.4-4' }}, {{ draft.lng | number: '1.4-4' }}</span>
-                  <span class="map-hint">Rayon {{ draft.serviceRadiusKm }} km</span>
-                </div>
+                <app-map-picker
+                  [lat]="draft.lat"
+                  [lng]="draft.lng"
+                  (pick)="onMapPick($event)"
+                />
                 <div class="grid sm-2 mt">
                   <label class="field">
                     <span>Latitude</span>
@@ -225,20 +221,23 @@ const LEGAL_STATUSES = ['SARL', 'SA', 'Entreprise individuelle', 'GIC / Coopéra
                 <p class="section-title">Horaires d'ouverture</p>
                 <ul class="hours">
                   @for (h of draft.hours; track h.day; let i = $index) {
-                    <li>
+                    <li [class.is-closed]="h.closed">
                       <span class="day">{{ h.day }}</span>
-                      <input
-                        type="time"
-                        [(ngModel)]="draft.hours[i].open"
-                        [disabled]="h.closed"
-                        [attr.aria-label]="'Ouverture ' + h.day"
-                      />
-                      <input
-                        type="time"
-                        [(ngModel)]="draft.hours[i].close"
-                        [disabled]="h.closed"
-                        [attr.aria-label]="'Fermeture ' + h.day"
-                      />
+                      <div class="time-pair">
+                        <input
+                          type="time"
+                          [(ngModel)]="draft.hours[i].open"
+                          [disabled]="h.closed"
+                          [attr.aria-label]="'Ouverture ' + h.day"
+                        />
+                        <span class="sep">→</span>
+                        <input
+                          type="time"
+                          [(ngModel)]="draft.hours[i].close"
+                          [disabled]="h.closed"
+                          [attr.aria-label]="'Fermeture ' + h.day"
+                        />
+                      </div>
                       <label class="closed-check">
                         <input type="checkbox" [(ngModel)]="draft.hours[i].closed" />
                         Fermé
@@ -481,9 +480,16 @@ const LEGAL_STATUSES = ['SARL', 'SA', 'Entreprise individuelle', 'GIC / Coopéra
     .mt { margin-top: 12px; }
     .range { width: 100%; margin-top: 8px; accent-color: rgb(var(--accent)); }
     .hours { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    .hours li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-    .hours .day { width: 6rem; font-size: 14px; color: rgb(var(--muted)); }
-    .hours input[type='time'] { width: 8rem; }
+    .hours li {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid rgb(var(--line));
+      background: rgb(var(--surface));
+    }
+    .hours li.is-closed { opacity: 0.72; background: rgb(var(--surface-2)); }
+    .hours .day { width: 6rem; font-size: 14px; font-weight: 600; color: rgb(var(--muted)); }
+    .time-pair { display: flex; align-items: center; gap: 8px; }
+    .time-pair .sep { color: rgb(var(--muted)); font-size: 12px; }
+    .hours input[type='time'] { width: 8rem; padding: 6px 8px; border-radius: 8px; border: 1px solid rgb(var(--line)); }
     .closed-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(var(--muted)); cursor: pointer; }
     .closed-check input { width: auto; accent-color: rgb(var(--accent)); }
     .toggles { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid rgb(var(--line)); }
@@ -574,6 +580,11 @@ export class ManagerStoreCreateComponent implements OnInit {
   saveDraft(): void {
     saveStoreDraft(this.draft);
     this.snackBar.open('Brouillon enregistré', 'OK', { duration: 2000 });
+  }
+
+  onMapPick(pos: { lat: number; lng: number }): void {
+    this.draft.lat = pos.lat;
+    this.draft.lng = pos.lng;
   }
 
   toggleCategory(id: string): void {

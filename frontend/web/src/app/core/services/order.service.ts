@@ -197,6 +197,21 @@ export class OrderService {
   }
 
   cancelOrder(id: string): Observable<Order> {
-    return this.api.post<Order>(`/orders/orders/${id}/cancel`, {});
+    if (this.useLocal()) {
+      try {
+        return of(this.local.cancelOrder(id));
+      } catch (e) {
+        return throwError(() => e);
+      }
+    }
+    return this.api.post<Order>(`/orders/orders/${id}/cancel`, {}).pipe(
+      catchError(() => {
+        try {
+          return of(this.local.cancelOrder(id));
+        } catch (e) {
+          return throwError(() => e);
+        }
+      }),
+    );
   }
 }

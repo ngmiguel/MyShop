@@ -5,6 +5,11 @@ export const routes: Routes = [
   { path: '', redirectTo: 'client/feed', pathMatch: 'full' },
 
   {
+    path: 'onboarding',
+    loadComponent: () => import('./features/onboarding/onboarding.component').then(m => m.OnboardingComponent),
+  },
+
+  {
     path: 'auth',
     children: [
       { path: 'login', loadComponent: () => import('./features/auth/login-chooser/login-chooser.component').then(m => m.LoginChooserComponent) },
@@ -24,9 +29,12 @@ export const routes: Routes = [
       { path: 'cart', loadComponent: () => import('./features/client/cart/cart.component').then(m => m.CartComponent) },
       { path: 'checkout', loadComponent: () => import('./features/client/checkout/checkout.component').then(m => m.CheckoutComponent) },
       { path: 'codes', loadComponent: () => import('./features/client/codes/codes.component').then(m => m.CodesComponent) },
+      { path: 'codes/:id', loadComponent: () => import('./features/client/codes/code-detail.component').then(m => m.CodeDetailComponent) },
+      { path: 'tickets', loadComponent: () => import('./features/client/tickets/client-tickets.component').then(m => m.ClientTicketsComponent) },
       { path: 'favorites', loadComponent: () => import('./features/client/favorites/favorites.component').then(m => m.FavoritesComponent) },
       { path: 'profit', loadComponent: () => import('./features/client/profit/client-profit.component').then(m => m.ClientProfitComponent) },
       { path: 'account', loadComponent: () => import('./features/client/account/client-account.component').then(m => m.ClientAccountComponent) },
+      { path: 'preferences', loadComponent: () => import('./features/client/preferences/client-preferences.component').then(m => m.ClientPreferencesComponent) },
       { path: 'settings', loadComponent: () => import('./features/client/settings/client-settings.component').then(m => m.ClientSettingsComponent) },
     ],
   },
@@ -36,13 +44,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/seller/seller-layout.component').then(m => m.SellerLayoutComponent),
     canActivate: [authGuard, roleGuard('vendeur')],
     children: [
+      { path: 'home', loadComponent: () => import('./features/seller/home/seller-home.component').then(m => m.SellerHomeComponent) },
       { path: 'scanner', loadComponent: () => import('./features/seller/scanner/scanner.component').then(m => m.ScannerComponent) },
       { path: 'queue', loadComponent: () => import('./features/seller/queue/queue.component').then(m => m.QueueComponent) },
       { path: 'performance', loadComponent: () => import('./features/seller/performance/seller-performance.component').then(m => m.SellerPerformanceComponent) },
       { path: 'stock', loadComponent: () => import('./features/seller/stock/seller-stock.component').then(m => m.SellerStockComponent) },
       { path: 'profit', loadComponent: () => import('./features/seller/profit/seller-profit.component').then(m => m.SellerProfitComponent) },
       { path: 'settings', loadComponent: () => import('./features/seller/settings/seller-settings.component').then(m => m.SellerSettingsComponent) },
-      { path: '', redirectTo: 'scanner', pathMatch: 'full' },
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },
 

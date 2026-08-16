@@ -13,6 +13,9 @@ export interface OnboardingState {
   intention: 'buy' | 'compare' | 'browse';
   currency: 'XAF' | 'EUR' | 'USD';
   notifications: boolean;
+  preferredMode: 'any' | 'pickup' | 'delivery';
+  promosOnly: boolean;
+  localOnly: boolean;
 }
 
 const KEY = 'boutika_onboarding';
@@ -30,6 +33,9 @@ const DEFAULT: OnboardingState = {
   intention: 'browse',
   currency: 'XAF',
   notifications: true,
+  preferredMode: 'any',
+  promosOnly: false,
+  localOnly: false,
 };
 
 @Injectable({ providedIn: 'root' })

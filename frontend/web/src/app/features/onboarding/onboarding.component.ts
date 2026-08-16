@@ -1,12 +1,14 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { CATEGORIES, CITIES } from '../../core/data/categories';
 import { categoryImage } from '../../core/data/images';
 import { OnboardingService } from '../../core/services/onboarding.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { GoogleSignInSheetComponent } from '../../shared/components/google-sign-in-sheet/google-sign-in-sheet.component';
 
 const STEPS = ["Centres d'intérêt", 'Sous-catégories', 'Localisation', 'Budget & intention', 'Confort'];
 
@@ -19,7 +21,7 @@ const INTENTS = [
 @Component({
   selector: 'app-onboarding',
   standalone: true,
-  imports: [FormsModule, MatIconModule, MatSlideToggleModule, DecimalPipe],
+  imports: [FormsModule, MatIconModule, MatSlideToggleModule, DecimalPipe, GoogleSignInSheetComponent],
   template: `
     <div class="onboarding">
       <header class="header">
@@ -129,7 +131,13 @@ const INTENTS = [
               </div>
               <div class="panel">
                 <p class="panel-title"><mat-icon>mail</mat-icon> Connexion Gmail (facultatif)</p>
-                <input type="email" [(ngModel)]="gmail" placeholder="prenom.nom@gmail.com" />
+                @if (gmailConnected()) {
+                  <p class="gmail-ok"><mat-icon>check_circle</mat-icon> {{ gmailConnected() }}</p>
+                } @else {
+                  <button type="button" class="btn-google" (click)="showGoogle.set(true)">
+                    Continuer avec Google
+                  </button>
+                }
               </div>
             </div>
           }
@@ -151,6 +159,13 @@ const INTENTS = [
         }
       </footer>
     </div>
+
+    @if (showGoogle()) {
+      <app-google-sign-in-sheet
+        (close)="showGoogle.set(false)"
+        (connected)="onGoogleConnected($event)"
+      />
+    }
   `,
   styles: [`
     .onboarding { min-height: 100dvh; display: flex; flex-direction: column; background: rgb(var(--canvas)); }
@@ -250,10 +265,20 @@ const INTENTS = [
     .btn-ghost:disabled { opacity: 0.4; cursor: default; }
     .btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 999px; border: none; background: rgb(var(--accent)); color: white; font-weight: 600; cursor: pointer; }
     .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .btn-google {
+      margin-top: 8px; width: 100%; padding: 10px 14px; border-radius: 999px;
+      border: 1px solid rgb(var(--line)); background: rgb(var(--surface));
+      font-weight: 600; cursor: pointer;
+    }
+    .gmail-ok {
+      display: flex; align-items: center; gap: 8px; margin: 8px 0 0;
+      color: #047857; font-weight: 600; font-size: 0.9rem;
+    }
   `],
 })
 export class OnboardingComponent {
   private readonly onboarding = inject(OnboardingService);
+  private readonly router = inject(Router);
   readonly theme = inject(ThemeService);
 
   readonly steps = STEPS;
@@ -276,7 +301,8 @@ export class OnboardingComponent {
   intention = signal<'buy' | 'compare' | 'browse'>('browse');
   currency = signal<'XAF' | 'EUR' | 'USD'>('XAF');
   notifications = signal(true);
-  gmail = '';
+  showGoogle = signal(false);
+  gmailConnected = signal(localStorage.getItem('boutika_gmail'));
 
   toggleCat(id: string): void {
     const list = this.selectedCategories();
@@ -290,9 +316,14 @@ export class OnboardingComponent {
 
   categoryImage = categoryImage;
 
+  onGoogleConnected(email: string): void {
+    this.gmailConnected.set(email);
+  }
+
   skip(): void {
     const cats = this.selectedCategories().length ? this.selectedCategories() : CATEGORIES.slice(0, 6).map((c) => c.id);
     this.onboarding.complete({ categories: cats });
+    void this.router.navigateByUrl('/client/feed');
   }
 
   finish(): void {
@@ -310,5 +341,6 @@ export class OnboardingComponent {
       currency: this.currency(),
       notifications: this.notifications(),
     });
+    void this.router.navigateByUrl('/client/feed');
   }
 }

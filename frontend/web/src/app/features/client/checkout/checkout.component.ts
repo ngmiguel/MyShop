@@ -149,15 +149,22 @@ const METHODS: Array<{ id: PaymentMethod; label: string; description: string; ic
               <ul class="created-list">
                 @for (order of created(); track order.id) {
                   <li>
-                    <span class="ref">{{ order.reference }}</span>
+                    <a [routerLink]="['/client/codes', order.id]" class="ref">{{ order.reference }}</a>
                     <span class="store">{{ order.storeName }}</span>
                     <span class="amount">{{ order.total | currency:'XOF':'symbol-narrow':'1.0-0' }}</span>
                   </li>
                 }
               </ul>
-              <button type="button" class="btn-primary" routerLink="/client/codes">
-                <mat-icon>qr_code_2</mat-icon> Voir mes codes QR
-              </button>
+              <div class="confirm-actions">
+                @if (created().length === 1) {
+                  <a class="btn-primary" [routerLink]="['/client/codes', created()[0].id]">
+                    <mat-icon>qr_code_2</mat-icon> Ouvrir mon code
+                  </a>
+                }
+                <a class="btn-primary" routerLink="/client/codes" [class.btn-outline]="created().length === 1">
+                  <mat-icon>qr_code_2</mat-icon> Voir mes codes QR
+                </a>
+              </div>
             </div>
           </section>
         }
@@ -234,9 +241,13 @@ const METHODS: Array<{ id: PaymentMethod; label: string; description: string; ic
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       padding: 10px 12px; border: 1px solid rgb(var(--line)); border-radius: 8px; margin-bottom: 8px; font-size: 14px;
     }
-    .ref { font-family: ui-monospace, monospace; font-weight: 600; }
+    .ref { font-family: ui-monospace, monospace; font-weight: 600; text-decoration: none; color: rgb(var(--ink)); }
     .store { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgb(var(--muted)); }
     .amount { font-weight: 600; flex-shrink: 0; }
+    .confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .confirm-actions .btn-outline {
+      background: transparent; border: 1px solid rgb(var(--line)); color: rgb(var(--ink));
+    }
     .nav-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .btn-ghost { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; color: rgb(var(--muted)); cursor: pointer; font-size: 14px; }
     .btn-ghost:hover { color: rgb(var(--ink)); }

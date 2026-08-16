@@ -430,6 +430,10 @@ export class FeedComponent implements OnInit {
 
       if (this.tab() === 'foryou' && prefs.categories.length && product.categoryId && !prefs.categories.includes(product.categoryId)) return false;
 
+      if (prefs.promosOnly && !product.compareAtPrice) return false;
+
+      if (prefs.localOnly && distance > Math.min(prefs.radiusKm, 12)) return false;
+
       return true;
 
     });

@@ -14,8 +14,6 @@ import { OnboardingService } from '../../core/services/onboarding.service';
 
 import { ThemeQuickToggleComponent } from '../../shared/components/theme-quick-toggle/theme-quick-toggle.component';
 
-import { OnboardingComponent } from '../onboarding/onboarding.component';
-
 
 
 @Component({
@@ -28,19 +26,13 @@ import { OnboardingComponent } from '../onboarding/onboarding.component';
 
     RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, FormsModule,
 
-    ThemeQuickToggleComponent, OnboardingComponent,
+    ThemeQuickToggleComponent,
 
   ],
 
   template: `
 
-    @if (!onboarding.state().completed) {
-
-      <app-onboarding />
-
-    } @else {
-
-      <div class="layout">
+    <div class="layout">
 
         <header class="header">
 
@@ -157,8 +149,6 @@ import { OnboardingComponent } from '../onboarding/onboarding.component';
         </nav>
 
       </div>
-
-    }
 
   `,
 
@@ -590,9 +580,13 @@ export class ClientLayoutComponent implements OnInit {
 
     { to: '/client/codes', label: 'Mes codes', icon: 'qr_code_2', exact: false },
 
+    { to: '/client/tickets', label: 'Tickets', icon: 'receipt_long', exact: false },
+
     { to: '/client/favorites', label: 'Favoris', icon: 'favorite', exact: false },
 
     { to: '/client/profit', label: 'Dépenses', icon: 'pie_chart', exact: false },
+
+    { to: '/client/preferences', label: 'Préférences', icon: 'tune', exact: false },
 
     { to: '/client/settings', label: 'Paramètres', icon: 'settings', exact: false },
 
@@ -601,9 +595,11 @@ export class ClientLayoutComponent implements OnInit {
 
 
   ngOnInit(): void {
-
+    if (!this.onboarding.state().completed) {
+      void this.router.navigateByUrl('/onboarding');
+      return;
+    }
     this.cartState.refresh();
-
   }
 
 

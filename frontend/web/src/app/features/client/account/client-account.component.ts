@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DemoRoleLoginComponent } from '../../../shared/components/auth/demo-role-login.component';
+import { GoogleSignInSheetComponent } from '../../../shared/components/google-sign-in-sheet/google-sign-in-sheet.component';
 
 interface ClientAccount {
   name: string;
@@ -16,7 +17,13 @@ const KEY = 'boutika_client_account';
 @Component({
   selector: 'app-client-account',
   standalone: true,
-  imports: [FormsModule, MatIconModule, MatSnackBarModule, DemoRoleLoginComponent],
+  imports: [
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    DemoRoleLoginComponent,
+    GoogleSignInSheetComponent,
+  ],
   template: `
     <div class="page">
       <header>
@@ -55,13 +62,21 @@ const KEY = 'boutika_client_account';
           <p class="connected"><mat-icon>check_circle</mat-icon> {{ gmailEmail() }}</p>
           <button type="button" class="btn-outline" (click)="disconnectGmail()">Déconnecter</button>
         } @else {
-          <input type="email" [(ngModel)]="gmailInput" placeholder="prenom.nom@gmail.com" />
-          <button type="button" class="btn-primary" (click)="connectGmail()">Connecter Gmail</button>
+          <button type="button" class="btn-google" (click)="showGoogle.set(true)">
+            <span class="g">G</span> Continuer avec Google
+          </button>
         }
       </section>
 
       <app-demo-role-login currentRole="client" />
     </div>
+
+    @if (showGoogle()) {
+      <app-google-sign-in-sheet
+        (close)="showGoogle.set(false)"
+        (connected)="onGoogleConnected($event)"
+      />
+    }
   `,
   styles: [`
     .page { max-width: 48rem; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
@@ -74,12 +89,18 @@ const KEY = 'boutika_client_account';
     @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } .full { grid-column: span 2; } }
     label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
     input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); }
-    .btn-primary, .btn-outline {
+    .btn-primary, .btn-outline, .btn-google {
       display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; margin-right: 8px;
       padding: 10px 16px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px;
     }
     .btn-primary { border: none; background: rgb(var(--accent)); color: white; }
     .btn-outline { border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); }
+    .btn-google { border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); color: rgb(var(--ink)); }
+    .btn-google .g {
+      width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center;
+      font-size: 11px; font-weight: 800; color: white;
+      background: conic-gradient(#4285f4 0 25%, #34a853 0 50%, #fbbc05 0 75%, #ea4335 0 100%);
+    }
     .badge { display: inline-block; margin-left: 8px; padding: 4px 10px; border-radius: 999px; background: rgba(5, 150, 105, 0.1); color: #059669; font-size: 12px; font-weight: 600; }
     .connected { display: flex; align-items: center; gap: 8px; color: rgb(var(--ink)); }
     .connected mat-icon { color: rgb(var(--accent)); font-size: 18px; width: 18px; height: 18px; }
@@ -89,7 +110,7 @@ export class ClientAccountComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   account: ClientAccount = this.load();
-  gmailInput = '';
+  showGoogle = signal(false);
   gmailConnected = signal(!!localStorage.getItem('boutika_gmail'));
   gmailEmail = signal(localStorage.getItem('boutika_gmail') ?? '');
 
@@ -99,12 +120,11 @@ export class ClientAccountComponent {
     this.snackBar.open('Profil enregistré', 'OK', { duration: 2000 });
   }
 
-  connectGmail(): void {
-    if (!this.gmailInput.includes('@')) return;
-    localStorage.setItem('boutika_gmail', this.gmailInput);
+  onGoogleConnected(email: string): void {
     this.gmailConnected.set(true);
-    this.gmailEmail.set(this.gmailInput);
-    this.snackBar.open('Gmail connecté', 'OK', { duration: 2000 });
+    this.gmailEmail.set(email);
+    this.account = this.load();
+    this.snackBar.open('Gmail synchronisé', 'OK', { duration: 2200 });
   }
 
   disconnectGmail(): void {

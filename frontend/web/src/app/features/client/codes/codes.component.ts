@@ -44,7 +44,9 @@ type TabId = 'active' | 'done' | 'tickets';
         @if (active().length) {
           <div class="active-grid">
             @for (order of active(); track order.id) {
-              <app-qr-ticket [order]="order" />
+              <a class="ticket-link" [routerLink]="['/client/codes', order.id]">
+                <app-qr-ticket [order]="order" />
+              </a>
             }
           </div>
         } @else {
@@ -96,6 +98,12 @@ type TabId = 'active' | 'done' | 'tickets';
           />
         }
       } @else {
+        <div class="tickets-toolbar">
+          <p>Reçus détaillés et actions d'export.</p>
+          <a routerLink="/client/tickets" class="btn-outline">
+            <mat-icon>open_in_new</mat-icon> Vue tickets complète
+          </a>
+        </div>
         @if (allOrders().length) {
           <div class="tickets-list">
             @for (order of allOrders(); track order.id) {
@@ -114,7 +122,7 @@ type TabId = 'active' | 'done' | 'tickets';
                 </ul>
                 <dl class="ticket-totals">
                   <div><dt>Taxes</dt><dd>{{ (order.tax ?? 0) | currency:'XOF':'symbol-narrow':'1.0-0' }}</dd></div>
-                  @if ((order.discount ?? 0) > 0) {
+                  @if (order.discount > 0) {
                     <div class="discount"><dt>Remise</dt><dd>−{{ order.discount | currency:'XOF':'symbol-narrow':'1.0-0' }}</dd></div>
                   }
                   <div class="grand"><dt>Total payé</dt><dd>{{ order.total | currency:'XOF':'symbol-narrow':'1.0-0' }}</dd></div>
@@ -170,6 +178,13 @@ type TabId = 'active' | 'done' | 'tickets';
     .btn-outline mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .active-grid { display: grid; gap: 16px; }
     @media (min-width: 768px) { .active-grid { grid-template-columns: 1fr 1fr; } }
+    .ticket-link { display: block; text-decoration: none; color: inherit; border-radius: 12px; }
+    .ticket-link:hover { outline: 2px solid rgb(var(--accent) / 0.35); outline-offset: 2px; }
+    .tickets-toolbar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
+      margin-bottom: 4px;
+    }
+    .tickets-toolbar p { margin: 0; font-size: 13px; color: rgb(var(--muted)); }
     .history-list, .tickets-list { display: flex; flex-direction: column; gap: 12px; }
     .history-card, .ticket-card { padding: 16px; }
     .history-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; }

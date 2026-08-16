@@ -218,6 +218,19 @@ export class LocalOrderService {
     return orders[idx];
   }
 
+  cancelOrder(orderId: string): Order {
+    const orders = this.loadOrders();
+    const idx = orders.findIndex((o) => o.id === orderId);
+    if (idx === -1) throw new Error('Commande introuvable');
+    const current = orders[idx];
+    if (current.status !== 'pending' && current.status !== 'ready') {
+      throw new Error('Seul un code en attente peut être annulé');
+    }
+    orders[idx] = { ...current, status: 'cancelled' };
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    return orders[idx];
+  }
+
   private ensureSeedOrders(): void {
     if (localStorage.getItem(SEED_FLAG) === DEMO_SEED_ORDERS_VERSION) return;
     const sessionId = this.session.getSessionId();
