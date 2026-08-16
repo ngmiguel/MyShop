@@ -21,11 +21,30 @@ dependencies:
   cached_network_image: ^3.4.1
   google_fonts: ^6.2.1
   fl_chart: ^0.70.2
+  image_picker: ^1.2.3
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/icon/icon.png
+  remove_alpha_ios: true
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: true
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/icon.png
