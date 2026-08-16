@@ -1,254 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/formatters.dart';
-import '../../data/models/order.dart';
-import '../../data/services/order_service.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/catalog_provider.dart';
-import '../../providers/orders_provider.dart';
+import '../../providers/preferences_provider.dart';
 import '../../widgets/app_layout.dart';
-import '../../widgets/common_widgets.dart';
-import '../../widgets/store_card.dart';
 
-class ManagerDashboardScreen extends StatefulWidget {
-  const ManagerDashboardScreen({super.key});
+export 'manager_pilotage_screen.dart';
+export 'manager_boutiques_screen.dart';
+export 'manager_profit_screen.dart';
+export 'manager_equipe_screen.dart';
+export 'manager_analytics_screen.dart';
+export 'manager_models_screen.dart';
+
+class ManagerSettingsScreen extends StatefulWidget {
+  const ManagerSettingsScreen({super.key});
 
   @override
-  State<ManagerDashboardScreen> createState() => _ManagerDashboardScreenState();
+  State<ManagerSettingsScreen> createState() => _ManagerSettingsScreenState();
 }
 
-class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await context.read<CatalogProvider>().loadFeed();
-      await context.read<OrdersProvider>().loadOrders();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final catalog = context.watch<CatalogProvider>();
-    final orders = context.watch<OrdersProvider>();
-
-    final redeemed = orders.orders.where((o) => o.status == 'redeemed').toList();
-    final ca = redeemed.fold<double>(0, (sum, o) => sum + o.total);
-    final pending = orders.pendingOrders.length;
-    final lowStock = catalog.products.where((p) => p.stock <= 5).length;
-
-    return Scaffold(
-      backgroundColor: AppTheme.contentBackground(context),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: HeroHeader(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'BUSINESS INTELLIGENCE',
-                    style: TextStyle(color: AppTheme.accent300, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
-                  ),
-                  Text(
-                    auth.user?.displayName ?? 'Pilotage',
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
-                  ),
-                  Text(
-                    '${catalog.stores.length} boutiques - panier moyen ${formatPrix(redeemed.isEmpty ? 0 : ca / redeemed.length)}',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: ContentSheet(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.4,
-                      children: [
-                        _KpiCard(icon: Icons.payments_outlined, label: 'CA confirme', value: formatPrix(ca)),
-                        _KpiCard(icon: Icons.shopping_cart_outlined, label: 'Commandes', value: '${orders.orders.length}'),
-                        _KpiCard(icon: Icons.pending_actions_outlined, label: 'En attente', value: '$pending'),
-                        _KpiCard(icon: Icons.warning_amber_outlined, label: 'Stock critique', value: '$lowStock'),
-                      ],
-                    ),
-                  ),
-                  const SectionHeader(title: 'Top boutiques'),
-                  ...catalog.stores.take(5).map((store) {
-                    final storeOrders = orders.orders.where((o) => o.storeId == store.id && o.status == 'redeemed');
-                    final storeCa = storeOrders.fold<double>(0, (s, o) => s + o.total);
-                    return ListTile(
-                      leading: const Icon(Icons.store_outlined),
-                      title: Text(store.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      trailing: Text(formatPrix(storeCa), style: const TextStyle(fontWeight: FontWeight.w800)),
-                    );
-                  }),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/manager/monitoring'),
-                    icon: const Icon(Icons.monitor_heart_outlined),
-                    label: const Text('Monitoring systeme'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => context.push('/manager/boutiques/nouvelle'),
-                    icon: const Icon(Icons.add_business_outlined),
-                    label: const Text('Creer une boutique'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _KpiCard extends StatelessWidget {
-  const _KpiCard({required this.icon, required this.label, required this.value});
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: AppTheme.accent500),
-            const Spacer(),
-            Text(label, style: const TextStyle(color: AppTheme.ink700, fontSize: 12)),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ManagerStoresScreen extends StatefulWidget {
-  const ManagerStoresScreen({super.key});
-
-  @override
-  State<ManagerStoresScreen> createState() => _ManagerStoresScreenState();
-}
-
-class _ManagerStoresScreenState extends State<ManagerStoresScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CatalogProvider>().loadFeed();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogProvider>();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Boutiques'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<CatalogProvider>().loadFeed(),
-          ),
-        ],
-      ),
-      body: catalog.loading
-          ? const LoadingView()
-          : catalog.stores.isEmpty
-              ? const EmptyState(icon: Icons.store_outlined, title: 'Aucune boutique')
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: catalog.stores.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final store = catalog.stores[index];
-                    return InkWell(
-                      onTap: () => context.push('/manager/boutiques/${store.id}'),
-                      child: StoreCard(store: store),
-                    );
-                  },
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/manager/boutiques/nouvelle'),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class ManagerProfitScreen extends StatelessWidget {
-  const ManagerProfitScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final orders = context.watch<OrdersProvider>();
-    final redeemed = orders.orders.where((o) => o.status == 'redeemed').toList();
-    final total = redeemed.fold<double>(0, (s, o) => s + o.total);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profit')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.account_balance_wallet_outlined),
-              title: const Text('Chiffre d\'affaires confirme'),
-              trailing: Text(formatPrix(total), style: const TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const SectionHeader(title: 'Commandes encaissees'),
-          ...redeemed.map(
-            (order) => Card(
-              child: ListTile(
-                title: Text(order.reference),
-                subtitle: Text(formatDate(order.redeemedAt ?? order.createdAt ?? DateTime.now())),
-                trailing: Text(formatPrix(order.total)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ManagerTeamScreen extends StatefulWidget {
-  const ManagerTeamScreen({super.key});
-
-  @override
-  State<ManagerTeamScreen> createState() => _ManagerTeamScreenState();
-}
-
-class _ManagerTeamScreenState extends State<ManagerTeamScreen> {
-  List<SellerModel> _sellers = [];
-  bool _loading = true;
-  String? _error;
+class _ManagerSettingsScreenState extends State<ManagerSettingsScreen> {
+  double _taxRate = 19.25;
+  int _accessCodeLength = 8;
+  int _qrExpiryHours = 48;
+  int _modelRefreshHours = 6;
+  int _latencyThreshold = 800;
+  int _errorThreshold = 5;
+  bool _autoApprove = false;
 
   @override
   void initState() {
@@ -257,69 +38,44 @@ class _ManagerTeamScreenState extends State<ManagerTeamScreen> {
   }
 
   Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
-      _loading = true;
-      _error = null;
+      _taxRate = prefs.getDouble('mgr_tax') ?? 19.25;
+      _accessCodeLength = prefs.getInt('mgr_code_len') ?? 8;
+      _qrExpiryHours = prefs.getInt('mgr_qr_expiry') ?? 48;
+      _modelRefreshHours = prefs.getInt('mgr_model_refresh') ?? 6;
+      _latencyThreshold = prefs.getInt('mgr_latency') ?? 800;
+      _errorThreshold = prefs.getInt('mgr_errors') ?? 5;
+      _autoApprove = prefs.getBool('mgr_auto_approve') ?? false;
     });
-    try {
-      _sellers = await context.read<SellerApiService>().getSellers();
-    } catch (e) {
-      _error = e.toString();
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('mgr_tax', _taxRate);
+    await prefs.setInt('mgr_code_len', _accessCodeLength);
+    await prefs.setInt('mgr_qr_expiry', _qrExpiryHours);
+    await prefs.setInt('mgr_model_refresh', _modelRefreshHours);
+    await prefs.setInt('mgr_latency', _latencyThreshold);
+    await prefs.setInt('mgr_errors', _errorThreshold);
+    await prefs.setBool('mgr_auto_approve', _autoApprove);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Politiques enregistrées')));
     }
-    if (mounted) setState(() => _loading = false);
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Equipe'),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _load)],
-      ),
-      body: _loading
-          ? const LoadingView()
-          : _error != null
-              ? EmptyState(icon: Icons.error_outline, title: 'Erreur', subtitle: _error)
-              : _sellers.isEmpty
-                  ? const EmptyState(icon: Icons.groups_outlined, title: 'Aucun vendeur')
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _sellers.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final seller = _sellers[index];
-                        return Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.person_outline),
-                            title: Text(seller.displayName),
-                            subtitle: Text(seller.status),
-                            trailing: seller.status == 'pending'
-                                ? IconButton(
-                                    icon: const Icon(Icons.check),
-                                    onPressed: () async {
-                                      await context.read<SellerApiService>().approveSeller(seller.id);
-                                      _load();
-                                    },
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-    );
-  }
-}
-
-class ManagerSettingsScreen extends StatelessWidget {
-  const ManagerSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final prefsProvider = context.watch<PreferencesProvider>();
+    final prefs = prefsProvider.preferences;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reglages')),
+      backgroundColor: AppTheme.contentBackground(context),
+      appBar: AppBar(title: const Text('Réglages')),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
           if (auth.user != null)
             ListTile(
@@ -327,12 +83,200 @@ class ManagerSettingsScreen extends StatelessWidget {
               title: Text(auth.user!.displayName),
               subtitle: Text(auth.user!.email),
             ),
+          SettingsSection(
+            title: 'Apparence',
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ThemeSelector(
+                  value: prefs.themeMode,
+                  onChanged: (mode) => prefsProvider.update(prefs.copyWith(themeMode: mode)),
+                ),
+              ),
+              ListTile(
+                title: const Text('Taille du texte'),
+                subtitle: Text(switch (prefs.textScale) {
+                  'compact' => 'Compact',
+                  'large' => 'Grand',
+                  _ => 'Normal',
+                }),
+                trailing: DropdownButton<String>(
+                  value: prefs.textScale,
+                  underline: const SizedBox.shrink(),
+                  items: const [
+                    DropdownMenuItem(value: 'compact', child: Text('Compact')),
+                    DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                    DropdownMenuItem(value: 'large', child: Text('Grand')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) prefsProvider.update(prefs.copyWith(textScale: v));
+                  },
+                ),
+              ),
+              ListTile(
+                title: const Text('Densité'),
+                subtitle: Text(prefs.density == 'compact' ? 'Compacte' : 'Confortable'),
+                trailing: DropdownButton<String>(
+                  value: prefs.density,
+                  underline: const SizedBox.shrink(),
+                  items: const [
+                    DropdownMenuItem(value: 'compact', child: Text('Compacte')),
+                    DropdownMenuItem(value: 'confortable', child: Text('Confortable')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) prefsProvider.update(prefs.copyWith(density: v));
+                  },
+                ),
+              ),
+              SwitchListTile(
+                title: const Text('Réduire les animations'),
+                value: prefs.reduceMotion,
+                onChanged: (v) => prefsProvider.update(prefs.copyWith(reduceMotion: v)),
+              ),
+            ],
+          ),
+          SettingsSection(
+            title: 'Navigation',
+            children: [
+              SettingsTile(
+                icon: Icons.analytics_outlined,
+                title: 'Analyses',
+                subtitle: 'KPI, ABC, RFM, anomalies',
+                onTap: () => context.push('/manager/analytics'),
+              ),
+              SettingsTile(
+                icon: Icons.psychology_outlined,
+                title: 'Modèles prédictifs',
+                subtitle: 'Prévisions, rupture, attrition',
+                onTap: () => context.push('/manager/models'),
+              ),
+              SettingsTile(
+                icon: Icons.monitor_heart_outlined,
+                title: 'Monitoring système',
+                onTap: () => context.push('/manager/monitoring'),
+              ),
+              SettingsTile(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Profit & rentabilité',
+                onTap: () => context.go('/manager/profit'),
+                showDivider: false,
+              ),
+            ],
+          ),
+          SettingsSection(
+            title: 'Politiques enseigne',
+            children: [
+              SettingsTile(
+                icon: Icons.percent,
+                title: 'TVA par défaut',
+                subtitle: '${_taxRate.toStringAsFixed(2)} %',
+                onTap: () async {
+                  const options = [0.0, 5.5, 18.0, 19.25, 20.0];
+                  final v = await _pick(options.map((o) => (o, '${o.toStringAsFixed(2)} %')).toList());
+                  if (v != null) setState(() => _taxRate = v);
+                },
+              ),
+              SettingsTile(
+                icon: Icons.password_outlined,
+                title: 'Longueur code d’accès',
+                subtitle: '$_accessCodeLength caractères',
+                onTap: () async {
+                  final v = await _pick([6, 8, 10, 12].map((o) => (o, '$o caractères')).toList());
+                  if (v != null) setState(() => _accessCodeLength = v);
+                },
+              ),
+              SettingsTile(
+                icon: Icons.schedule_outlined,
+                title: 'Expiration QR',
+                subtitle: '$_qrExpiryHours h',
+                onTap: () async {
+                  final v = await _pick([24, 48, 72, 96].map((o) => (o, '$o heures')).toList());
+                  if (v != null) setState(() => _qrExpiryHours = v);
+                },
+              ),
+              SettingsTile(
+                icon: Icons.autorenew,
+                title: 'Refresh modèles',
+                subtitle: 'Toutes les $_modelRefreshHours h',
+                onTap: () async {
+                  final v = await _pick([3, 6, 12, 24].map((o) => (o, '$o heures')).toList());
+                  if (v != null) setState(() => _modelRefreshHours = v);
+                },
+                showDivider: false,
+              ),
+            ],
+          ),
+          SettingsSection(
+            title: 'Seuils d’alerte',
+            children: [
+              SettingsTile(
+                icon: Icons.speed_outlined,
+                title: 'Latence max',
+                subtitle: '$_latencyThreshold ms',
+                onTap: () async {
+                  final v = await _pick([400, 800, 1200, 2000].map((o) => (o, '$o ms')).toList());
+                  if (v != null) setState(() => _latencyThreshold = v);
+                },
+              ),
+              SettingsTile(
+                icon: Icons.error_outline,
+                title: 'Erreurs / fenêtre',
+                subtitle: '$_errorThreshold',
+                onTap: () async {
+                  final v = await _pick([3, 5, 10, 20].map((o) => (o, '$o erreurs')).toList());
+                  if (v != null) setState(() => _errorThreshold = v);
+                },
+                showDivider: false,
+              ),
+            ],
+          ),
+          SwitchListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            secondary: const Icon(Icons.how_to_reg_outlined),
+            title: const Text('Auto-approuver les vendeurs', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            subtitle: const Text('Valide automatiquement les inscriptions boutique'),
+            value: _autoApprove,
+            onChanged: (v) => setState(() => _autoApprove = v),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: FilledButton(
+              onPressed: _save,
+              style: FilledButton.styleFrom(backgroundColor: AppTheme.ink900, minimumSize: const Size.fromHeight(44)),
+              child: const Text('Enregistrer les politiques'),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.storefront_outlined),
+            title: const Text('Espace client'),
+            onTap: () async {
+              await auth.logout();
+              if (context.mounted) context.go('/client');
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Se deconnecter'),
-            onTap: () => auth.logout(),
+            title: const Text('Se déconnecter'),
+            onTap: () async {
+              await auth.logout();
+              if (context.mounted) context.go('/client');
+            },
           ),
         ],
+      ),
+    );
+  }
+
+  Future<T?> _pick<T>(List<(T, String)> options) {
+    return showModalBottomSheet<T>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final o in options) ListTile(title: Text(o.$2), onTap: () => Navigator.pop(ctx, o.$1)),
+          ],
+        ),
       ),
     );
   }
